@@ -1,15 +1,44 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Media;
 
 namespace DeskWatch.Models
 {
     public class AppUsage : INotifyPropertyChanged
     {
         private TimeSpan _total;
+        private ImageSource? _icon;
+        private bool _isSelected;
 
         public string Key { get; }
         public string DisplayName { get; }
+
+        public ImageSource? Icon
+        {
+            get => _icon;
+            set
+            {
+                if (_icon != value)
+                {
+                    _icon = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (_isSelected != value)
+                {
+                    _isSelected = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         public TimeSpan Total
         {
