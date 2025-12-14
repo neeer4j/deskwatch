@@ -56,11 +56,20 @@ namespace DeskWatch.Models
 
         public string FormattedTotal => string.Format("{0:00}:{1:00}:{2:00}", (int)Total.TotalHours, Total.Minutes, Total.Seconds);
 
+        public int FocusCount { get; private set; }
+
         public AppUsage(string key, string displayName)
         {
             Key = key;
             DisplayName = string.IsNullOrWhiteSpace(displayName) ? key : displayName;
             _total = TimeSpan.Zero;
+            FocusCount = 0;
+        }
+
+        public void IncrementFocusCount()
+        {
+            FocusCount++;
+            OnPropertyChanged(nameof(FocusCount));
         }
 
         public void Add(TimeSpan delta)

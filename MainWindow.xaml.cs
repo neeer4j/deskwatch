@@ -37,7 +37,38 @@ namespace DeskWatch
 
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _timer.Tick += Timer_Tick;
+            // No longer populating all apps automatically. User must add them.
         }
+
+        private void AddAppButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new AddAppWindow { Owner = this };
+            if (dialog.ShowDialog() == true && dialog.SelectedProcess != null)
+            {
+                var p = dialog.SelectedProcess;
+                if (!_usageMap.ContainsKey(p.ProcessName))
+                {
+                    var app = new AppUsage(p.ProcessName, p.MainWindowTitle);
+                    app.Icon = p.Icon;
+                    _usageMap[p.ProcessName] = app;
+                    AppUsages.Add(app);
+                }
+            }
+        }
+
+        private void RemoveApp_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedApp != null)
+            {
+                _usageMap.Remove(_selectedApp.Key);
+                AppUsages.Remove(_selectedApp);
+                _selectedApp = null;
+                DetailsPanel.Visibility = Visibility.Hidden;
+                NoSelectionText.Visibility = Visibility.Visible;
+                if (NoSelectionSubText != null) NoSelectionSubText.Visibility = Visibility.Visible;
+            }
+        }
+
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
@@ -45,16 +76,11 @@ namespace DeskWatch
 
             _lastKey = GetCurrentAppKey(out var displayName, out var exePath);
             
-            // Create entry for the currently active app if it doesn't exist
+            // Only track if it's already in the whitelist
+            // No auto-add here anymore.
             if (_lastKey != null && !_usageMap.ContainsKey(_lastKey))
             {
-                var usage = new AppUsage(_lastKey, displayName ?? _lastKey);
-                if (!string.IsNullOrEmpty(exePath))
-                {
-                    usage.Icon = GetAppIcon(exePath);
-                }
-                _usageMap[_lastKey] = usage;
-                AppUsages.Add(usage);
+               // Do nothing. It's not a tracked app.
             }
             
             _lastTickUtc = DateTime.UtcNow;
@@ -108,20 +134,31 @@ namespace DeskWatch
                 }
             }
 
-            // If we switched to a new app, ensure it exists in the map
-            if (currentKey != null && !_usageMap.ContainsKey(currentKey))
+            // If we switched to a new app, check if it is in our whitelist
+            if (currentKey != null)
             {
-                var usage = new AppUsage(currentKey, currentDisplayName ?? currentKey);
-                if (!string.IsNullOrEmpty(currentExePath))
+                if (_usageMap.TryGetValue(currentKey, out var usage))
                 {
-                    usage.Icon = GetAppIcon(currentExePath);
+                    // Increment focus count if we just switched to this app
+                    if (currentKey != _lastKey)
+                    {
+                        usage.IncrementFocusCount();
+                    }
                 }
-                _usageMap[currentKey] = usage;
-                AppUsages.Add(usage);
             }
 
             _lastKey = currentKey;
             _lastTickUtc = now;
+
+            // Refresh Details Panel if an app is selected
+            if (_selectedApp != null && DetailsPanel.Visibility == Visibility.Visible)
+            {
+                DetailsTime.Text = _selectedApp.FormattedTotal;
+                 if (FindName("DetailsCount") is TextBlock countBlock)
+                {
+                    countBlock.Text = _selectedApp.FocusCount.ToString();
+                }
+            }
         }
 
         private void AddTime(string key, TimeSpan delta, string? displayName, string? exePath)
@@ -157,8 +194,17 @@ namespace DeskWatch
 
                 using var proc = Process.GetProcessById((int)pid);
                 var key = proc.ProcessName;
-                exePath = null;
-                try { exePath = proc.MainModule?.FileName; } catch { }
+                
+                // Try to get MainModule to find exe path, but handle Access Denied
+                try 
+                { 
+                    exePath = proc.MainModule?.FileName; 
+                } 
+                catch 
+                { 
+                    // Access denied or process exited - ignoring exe path
+                    exePath = null;
+                }
 
                 // Prefer window title, fall back to product name, then process name
                 var title = GetWindowTitle(hwnd);
@@ -170,7 +216,11 @@ namespace DeskWatch
                 {
                     try
                     {
-                        displayName = proc.MainModule?.FileVersionInfo.ProductName;
+                        // Use MainModule only if we have access
+                        if (exePath != null)
+                        {
+                            displayName = proc.MainModule?.FileVersionInfo.ProductName;
+                        }
                     }
                     catch { }
                     displayName ??= key;
@@ -240,12 +290,23 @@ namespace DeskWatch
                 // Select this
                 app.GetType().GetProperty("IsSelected")?.SetValue(app, true);
                 _selectedApp = app;
+                
                 // Update details panel
                 DetailsPanel.Visibility = Visibility.Visible;
                 NoSelectionText.Visibility = Visibility.Collapsed;
+                // Check if the new subtext exists (it might not if XAML didn't have it, but our new XAML does)
+                var subText = NoSelectionSubText; 
+                if (subText != null) subText.Visibility = Visibility.Collapsed;
+
                 DetailsIcon.Source = app.Icon;
                 DetailsName.Text = app.DisplayName;
-                DetailsTime.Text = $"Total Time: {app.FormattedTotal}";
+                // Just the time string, label is in XAML
+                DetailsTime.Text = app.FormattedTotal;
+                // Bind count if element exists (it does in new XAML)
+                if (FindName("DetailsCount") is TextBlock countBlock)
+                {
+                    countBlock.Text = app.FocusCount.ToString();
+                }
             }
         }
 

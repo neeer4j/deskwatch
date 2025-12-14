@@ -5,133 +5,228 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DeskWatch"
         mc:Ignorable="d"
-        Title="DeskWatch" Height="600" Width="1000" MinHeight="400" MinWidth="700"
-        Background="#1E1E2F" FontFamily="Segoe UI" WindowStartupLocation="CenterScreen">
+        Title="DeskWatch" Height="650" Width="1100" MinHeight="500" MinWidth="800"
+        Background="#121212" Foreground="#E0E0E0" FontFamily="Segoe UI" WindowStartupLocation="CenterScreen">
+    
     <Window.Resources>
+        <!-- Colors -->
         <Color x:Key="AccentColor">#4F8EF7</Color>
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
-        <SolidColorBrush x:Key="PanelBackground" Color="#23233A"/>
-        <SolidColorBrush x:Key="CardBackground" Color="#23233A"/>
-        <SolidColorBrush x:Key="CardSelectedBackground" Color="#2D3A5A"/>
-        <SolidColorBrush x:Key="TextBrush" Color="#F3F3F3"/>
-        <Style x:Key="AppCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource CardBackground}"/>
-            <Setter Property="CornerRadius" Value="16"/>
-            <Setter Property="Margin" Value="12"/>
-            <Setter Property="Padding" Value="16"/>
-            <Setter Property="Width" Value="180"/>
-            <Setter Property="Height" Value="120"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Effect">
+        <SolidColorBrush x:Key="SidebarBackground" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="MainBackground" Color="#121212"/>
+        <SolidColorBrush x:Key="CardBackground" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="CardHoverBackground" Color="#2D2D2D"/>
+        <SolidColorBrush x:Key="CardSelectedBackground" Color="#252530"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#AAAAAA"/>
+
+        <!-- ScrollBar Styling (Modern/Hidden) -->
+        <Style TargetType="ScrollViewer">
+            <Setter Property="Template">
                 <Setter.Value>
-                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Color="#22000000"/>
+                    <ControlTemplate TargetType="ScrollViewer">
+                        <Grid>
+                            <ScrollContentPresenter />
+                            <ScrollBar x:Name="PART_VerticalScrollBar" Value="{TemplateBinding VerticalOffset}" Maximum="{TemplateBinding ScrollableHeight}" ViewportSize="{TemplateBinding ViewportHeight}" Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" HorizontalAlignment="Right" Width="4" Opacity="0.5"/>
+                        </Grid>
+                    </ControlTemplate>
                 </Setter.Value>
             </Setter>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="2"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                    <Setter Property="Background" Value="{StaticResource CardSelectedBackground}"/>
-                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
-                </DataTrigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
-                </Trigger>
-            </Style.Triggers>
         </Style>
-        <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0,0,16,0"/>
-            <Setter Property="MinWidth" Value="110"/>
-            <Setter Property="Height" Value="44"/>
-            <Setter Property="BorderThickness" Value="0"/>
+
+        <!-- Command Button Style (Sidebar) -->
+        <Style x:Key="CommandButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Margin" Value="10,4"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="22" Height="44" SnapsToDevicePixels="True" 
-                                Effect="{DynamicResource DropShadowEffect}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" Padding="12,0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock x:Name="icon" Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="16"  VerticalAlignment="Center" Margin="0,2,0,0"/>
+                                <TextBlock Text="{TemplateBinding Content}" FontSize="14" FontWeight="SemiBold" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#5CA9FF"/>
+                                <Setter TargetName="border" Property="Background" Value="#2D2D2D"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#3574D4"/>
-                            </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Background" Value="#444"/>
-                                <Setter Property="Foreground" Value="#AAA"/>
+                                <Setter Property="Foreground" Value="#444"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <DropShadowEffect x:Key="DropShadowEffect" BlurRadius="8" ShadowDepth="2" Color="#22000000"/>
+
+        <!-- Use Start/Stop specific styles based on command button -->
+        <Style x:Key="PrimaryCommandButtonStyle" TargetType="Button" BasedOn="{StaticResource CommandButtonStyle}">
+             <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+             <Style.Triggers>
+                 <Trigger Property="IsMouseOver" Value="True">
+                     <Setter Property="Foreground" Value="#6FAAFF"/>
+                 </Trigger>
+             </Style.Triggers>
+        </Style>
+
+        <!-- App Card Style -->
+        <Style x:Key="AppCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardBackground}"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Height" Value="110"/> <!-- Slightly taller for name -->
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.3"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+            
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource CardHoverBackground}"/>
+                    <Setter Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect BlurRadius="15" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.5"/>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource CardSelectedBackground}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="Button">
+            <!-- (Keeping other styles if they were here, but sticking to what's visible in this block) -->
+        </Style>
+
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
     </Window.Resources>
-    <DockPanel>
-        <Border Background="{StaticResource PanelBackground}" CornerRadius="12" Margin="12" Padding="16" DockPanel.Dock="Top">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="StartButton" Click="StartButton_Click">Start</Button>
-                <Button x:Name="StopButton" Click="StopButton_Click" IsEnabled="False">Stop</Button>
-                <Button x:Name="ResetButton" Click="ResetButton_Click">Reset</Button>
-                <TextBlock Margin="24,0,0,0" VerticalAlignment="Center" FontSize="15" Opacity="0.8">
-                    Tracking active window every 1s. Click a card for details.
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/> <!-- Sidebar -->
+            <ColumnDefinition Width="*"/>   <!-- Main Area -->
+            <ColumnDefinition Width="300"/> <!-- Details Pane -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <Border Grid.Column="0" Background="{StaticResource SidebarBackground}" BorderBrush="#2A2A2A" BorderThickness="0,0,1,0">
+            <StackPanel Margin="0,20">
+                <TextBlock Text="DeskWatch" FontSize="20" FontWeight="Bold" Foreground="White" Margin="24,0,0,30"/>
+                
+                <TextBlock Text="CONTROLS" FontSize="11" FontWeight="Bold" Foreground="#666" Margin="24,0,0,10"/>
+                <Button x:Name="StartButton" Click="StartButton_Click" Content="Tracker On" Tag="&#xE768;" Style="{StaticResource PrimaryCommandButtonStyle}"/>
+                <Button x:Name="StopButton" Click="StopButton_Click" Content="Tracker Off" Tag="&#xE71A;" Style="{StaticResource CommandButtonStyle}" IsEnabled="False"/>
+                <Button x:Name="ResetButton" Click="ResetButton_Click" Content="Reset Data" Tag="&#xE72C;" Style="{StaticResource CommandButtonStyle}"/>
+                
+                <Rectangle Height="1" Fill="#333" Margin="24,20,24,20"/>
+                
+                <Button x:Name="AddAppButton" Click="AddAppButton_Click" Content="Add App" Tag="&#xE710;" Style="{StaticResource CommandButtonStyle}" Foreground="#4F8EF7"/>
+
+                <TextBlock Text="STATUS" FontSize="11" FontWeight="Bold" Foreground="#666" Margin="24,30,0,10"/>
+                 <TextBlock Margin="24,0,24,0" TextWrapping="Wrap" FontSize="13" Foreground="#888">
+                    <Run Text="Tracking only added apps."/>
                 </TextBlock>
             </StackPanel>
         </Border>
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*"/>
-                <ColumnDefinition Width="2*"/>
-            </Grid.ColumnDefinitions>
-            <!-- App Cards -->
-            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="12">
+
+        <!-- Main Content (App Grid) -->
+        <Grid Grid.Column="1" Background="{StaticResource MainBackground}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            
+            <StackPanel Orientation="Horizontal" Margin="30,30,0,20">
+                <TextBlock Text="Initial Whitelist" FontSize="24" FontWeight="SemiBold" Foreground="White"/>
+                <TextBlock Text="(Active)" FontSize="14" Foreground="#666" VerticalAlignment="Bottom" Margin="10,0,0,4"/>
+            </StackPanel>
+            
+            <ScrollViewer Grid.Row="1" Padding="20,0">
                 <ItemsControl ItemsSource="{Binding AppUsages}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel/>
+                            <WrapPanel />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Style="{StaticResource AppCardStyle}"
-                                    MouseLeftButtonUp="AppCard_Click"
-                                    Tag="{Binding}">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <Image Source="{Binding Icon}" Width="40" Height="40" Margin="0,0,0,8"/>
-                                    <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" FontSize="15" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Text="{Binding FormattedTotal}" FontSize="13" Opacity="0.8" TextAlignment="Center"/>
-                                </StackPanel>
+                            <Border Style="{StaticResource AppCardStyle}" MouseLeftButtonUp="AppCard_Click" Tag="{Binding}">
+                                <Grid>
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <!-- App Icon -->
+                                        <Image Source="{Binding Icon}" Width="48" Height="48" Margin="0,0,0,10" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        <!-- Subtle App Name -->
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="11" Foreground="{StaticResource TextSecondary}" 
+                                                   TextAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="80"/>
+                                    </StackPanel>
+                                    
+                                    <!-- Selection Indicator (Bubble) -->
+                                    <Border Width="8" Height="8" CornerRadius="4" Background="{StaticResource AccentBrush}" 
+                                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8"
+                                            Visibility="{Binding IsSelected, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}"/>
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
-            <!-- Details Panel -->
-            <Border Grid.Column="1" Background="#23233A" CornerRadius="16" Margin="12" Padding="24">
-                <StackPanel>
-                    <TextBlock Text="App Details" FontSize="18" FontWeight="Bold" Margin="0,0,0,16"/>
-                    <StackPanel x:Name="DetailsPanel" Visibility="Collapsed">
-                        <Image x:Name="DetailsIcon" Width="48" Height="48" Margin="0,0,0,12"/>
-                        <TextBlock x:Name="DetailsName" FontSize="16" FontWeight="Bold"/>
-                        <TextBlock x:Name="DetailsTime" FontSize="14" Margin="0,8,0,0"/>
-                        <!-- Add more stats here if needed -->
-                    </StackPanel>
-                    <TextBlock x:Name="NoSelectionText" Text="Select an app card to see details." Opacity="0.7"/>
-                </StackPanel>
-            </Border>
         </Grid>
-    </DockPanel>
+
+        <!-- Right Details Pane -->
+        <Border Grid.Column="2" Background="{StaticResource SidebarBackground}" BorderBrush="#2A2A2A" BorderThickness="1,0,0,0">
+            <Grid>
+                <StackPanel Margin="30" x:Name="DetailsPanel" Visibility="Hidden">
+                        <!-- App Header -->
+                        <Image x:Name="DetailsIcon" Width="80" Height="80" HorizontalAlignment="Center" Margin="0,20,0,20" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <TextBlock x:Name="DetailsName" Text="Visual Studio" FontSize="20" FontWeight="Bold" Foreground="White" 
+                                   TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,40"/>
+                        
+                         <!-- Stat 1: Time -->
+                        <Border Background="#252525" CornerRadius="8" Padding="15" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="TOTAL TIME" FontSize="10" FontWeight="Bold" Foreground="#666" Margin="0,0,0,5"/>
+                                <TextBlock x:Name="DetailsTime" Text="02:14:55" FontSize="24" FontWeight="Light" Foreground="{StaticResource AccentBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                         <!-- Stat 2: Focus Count -->
+                        <Border Background="#252525" CornerRadius="8" Padding="15" Margin="0,0,0,30">
+                            <StackPanel>
+                                <TextBlock Text="TIMES ACCESSED" FontSize="10" FontWeight="Bold" Foreground="#666" Margin="0,0,0,5"/>
+                                <TextBlock Text="{Binding FocusCount}" x:Name="DetailsCount" FontSize="24" FontWeight="Light" Foreground="White"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Remove Button -->
+                        <Button Click="RemoveApp_Click" Content="Remove App" Background="#331515" Foreground="#FF6666" BorderThickness="0" Height="36" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                                        <TextBlock Text="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                </StackPanel>
+
+                <!-- Empty State -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock x:Name="NoSelectionText" Text="Select an app" FontSize="16" Foreground="#444" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="NoSelectionSubText" Text="to see usage details" FontSize="14" Foreground="#444" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>
