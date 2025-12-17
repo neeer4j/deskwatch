@@ -110,9 +110,12 @@ namespace DeskWatch
             {
                 StopButton_Click(sender, e);
             }
-            _usageMap.Clear();
-            AppUsages.Clear();
-            _iconCache.Clear();
+            
+            foreach (var app in AppUsages)
+            {
+                app.Reset();
+            }
+            // Do not clear the list or cache
         }
 
         private void Timer_Tick(object? sender, EventArgs e)

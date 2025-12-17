@@ -24,32 +24,34 @@ namespace DeskWatch
         private void LoadProcesses()
         {
             var apps = new List<ProcessItem>();
-            var processes = Process.GetProcesses();
+            var processGroups = Process.GetProcesses()
+                .Where(p => p.MainWindowHandle != IntPtr.Zero && !string.IsNullOrWhiteSpace(p.MainWindowTitle))
+                .GroupBy(p => p.ProcessName);
 
-            foreach (var p in processes)
+            foreach (var group in processGroups)
             {
                 try
                 {
-                    if (p.MainWindowHandle != IntPtr.Zero && !string.IsNullOrWhiteSpace(p.MainWindowTitle))
+                    // Pick the process with the best title (e.g. not empty), or just the first one
+                    var p = group.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.MainWindowTitle)) ?? group.First();
+                    
+                    var item = new ProcessItem
                     {
-                        var item = new ProcessItem
+                        ProcessName = p.ProcessName,
+                        MainWindowTitle = p.MainWindowTitle
+                    };
+                    
+                    try
+                    {
+                        var path = p.MainModule?.FileName;
+                        if (path != null && File.Exists(path))
                         {
-                            ProcessName = p.ProcessName,
-                            MainWindowTitle = p.MainWindowTitle
-                        };
-                        
-                        try
-                        {
-                            var path = p.MainModule?.FileName;
-                            if (path != null && File.Exists(path))
-                            {
-                                item.Icon = GetAppIcon(path);
-                            }
+                            item.Icon = GetAppIcon(path);
                         }
-                        catch { }
-
-                        apps.Add(item);
                     }
+                    catch { }
+
+                    apps.Add(item);
                 }
                 catch { }
             }

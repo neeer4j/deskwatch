@@ -78,6 +78,13 @@ namespace DeskWatch.Models
             Total = Total + delta;
         }
 
+        public void Reset()
+        {
+            Total = TimeSpan.Zero;
+            FocusCount = 0;
+            OnPropertyChanged(nameof(FocusCount));
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
