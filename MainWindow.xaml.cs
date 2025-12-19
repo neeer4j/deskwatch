@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -22,6 +23,7 @@ namespace DeskWatch
         private readonly DispatcherTimer _timer;
         private readonly Dictionary<string, AppUsage> _usageMap = new();
         private readonly Dictionary<string, ImageSource?> _iconCache = new();
+        private readonly HashSet<string> _runningAppsLastTick = new(); // Track running apps for launch detection
 
         private DateTime _lastTickUtc;
         private string? _lastKey;
@@ -37,7 +39,86 @@ namespace DeskWatch
 
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _timer.Tick += Timer_Tick;
-            // No longer populating all apps automatically. User must add them.
+            
+            PopulateRunningApps(); // Auto-populate on startup
+            
+            // Initialize running apps set so already-running apps don't count as "launched"
+            foreach (var app in AppUsages)
+            {
+                _runningAppsLastTick.Add(app.Key);
+            }
+            
+            // Auto-start tracking
+            _lastKey = GetCurrentAppKey(out _, out _);
+            _lastTickUtc = DateTime.UtcNow;
+            _timer.Start();
+            StartButton.IsEnabled = false;
+            StopButton.IsEnabled = true;
+        }
+
+        private void PopulateRunningApps()
+        {
+            // System process names to exclude
+            var excludedProcesses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "TextInputHost", "WindowsInputExperience", "SystemSettings", "ShellExperienceHost",
+                "SearchHost", "StartMenuExperienceHost", "LockApp", "ApplicationFrameHost",
+                "RuntimeBroker", "svchost", "csrss", "dwm", "explorer", "Taskmgr",
+                "ctfmon", "SecurityHealthSystray", "NVIDIA Share", "NVDisplay.Container",
+                "SearchUI", "Cortana", "GameBar", "GameBarFTServer", "XboxGameBarWidgets"
+            };
+
+            var windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows).ToLowerInvariant();
+
+            var processGroups = Process.GetProcesses()
+                .Where(p => p.MainWindowHandle != IntPtr.Zero && !string.IsNullOrWhiteSpace(p.MainWindowTitle))
+                .Where(p => !excludedProcesses.Contains(p.ProcessName))
+                .GroupBy(p => p.ProcessName);
+
+            foreach (var group in processGroups)
+            {
+                try
+                {
+                    var p = group.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.MainWindowTitle)) ?? group.First();
+                    
+                    // Skip if already added
+                    if (_usageMap.ContainsKey(p.ProcessName))
+                        continue;
+
+                    string? exePath = null;
+                    try
+                    {
+                        exePath = p.MainModule?.FileName;
+                    }
+                    catch { }
+
+                    // Filter out system apps by checking the path
+                    if (!string.IsNullOrEmpty(exePath))
+                    {
+                        var lowerPath = exePath.ToLowerInvariant();
+                        
+                        // Skip apps from Windows system directories
+                        if (lowerPath.StartsWith(windowsDir) || 
+                            lowerPath.Contains("\\windowsapps\\") && lowerPath.Contains("microsoft.") ||
+                            lowerPath.Contains("\\system32\\") ||
+                            lowerPath.Contains("\\syswow64\\"))
+                        {
+                            continue;
+                        }
+                    }
+
+                    var app = new AppUsage(p.ProcessName, p.MainWindowTitle);
+                    
+                    if (!string.IsNullOrEmpty(exePath))
+                    {
+                        app.Icon = GetAppIcon(exePath);
+                    }
+                    
+                    _usageMap[p.ProcessName] = app;
+                    AppUsages.Add(app);
+                }
+                catch { }
+            }
         }
 
         private void AddAppButton_Click(object sender, RoutedEventArgs e)
@@ -137,17 +218,36 @@ namespace DeskWatch
                 }
             }
 
-            // If we switched to a new app, check if it is in our whitelist
-            if (currentKey != null)
+            // Check which tracked apps are currently running to detect launches
+            var currentlyRunning = new HashSet<string>();
+            try
             {
-                if (_usageMap.TryGetValue(currentKey, out var usage))
+                var runningProcessNames = Process.GetProcesses()
+                    .Where(p => p.MainWindowHandle != IntPtr.Zero)
+                    .Select(p => p.ProcessName)
+                    .ToHashSet();
+
+                foreach (var app in AppUsages)
                 {
-                    // Increment focus count if we just switched to this app
-                    if (currentKey != _lastKey)
+                    if (runningProcessNames.Contains(app.Key))
                     {
-                        usage.IncrementFocusCount();
+                        currentlyRunning.Add(app.Key);
+                        
+                        // If app is running now but wasn't running last tick = new launch
+                        if (!_runningAppsLastTick.Contains(app.Key))
+                        {
+                            app.IncrementFocusCount();
+                        }
                     }
                 }
+            }
+            catch { }
+
+            // Update the running apps set for next tick
+            _runningAppsLastTick.Clear();
+            foreach (var key in currentlyRunning)
+            {
+                _runningAppsLastTick.Add(key);
             }
 
             _lastKey = currentKey;

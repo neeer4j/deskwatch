@@ -166,10 +166,13 @@
                                 <Grid>
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                                         <!-- App Icon -->
-                                        <Image Source="{Binding Icon}" Width="48" Height="48" Margin="0,0,0,10" RenderOptions.BitmapScalingMode="HighQuality"/>
-                                        <!-- Subtle App Name -->
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="11" Foreground="{StaticResource TextSecondary}" 
+                                        <Image Source="{Binding Icon}" Width="40" Height="40" Margin="0,0,0,6" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        <!-- App Name -->
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="10" Foreground="{StaticResource TextSecondary}" 
                                                    TextAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="80"/>
+                                        <!-- Time Display -->
+                                        <TextBlock Text="{Binding FormattedTotal}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" 
+                                                   TextAlignment="Center" Margin="0,4,0,0"/>
                                     </StackPanel>
                                     
                                     <!-- Selection Indicator (Bubble) -->
