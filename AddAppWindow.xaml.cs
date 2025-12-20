@@ -21,6 +21,14 @@ namespace DeskWatch
             LoadProcesses();
         }
 
+        private void TitleBar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
+            {
+                this.DragMove();
+            }
+        }
+
         private void LoadProcesses()
         {
             var apps = new List<ProcessItem>();

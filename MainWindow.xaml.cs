@@ -54,6 +54,59 @@ namespace DeskWatch
             _timer.Start();
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
+            UpdateStatusIndicator(true);
+        }
+
+        #region Window Chrome Handlers
+        private void TitleBar_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2)
+            {
+                MaximizeButton_Click(sender, e);
+            }
+            else
+            {
+                this.DragMove();
+            }
+        }
+
+        private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
+        }
+
+        private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.WindowState == WindowState.Maximized)
+            {
+                this.WindowState = WindowState.Normal;
+                MaximizeButton.Content = "\uE922"; // Maximize icon
+            }
+            else
+            {
+                this.WindowState = WindowState.Maximized;
+                MaximizeButton.Content = "\uE923"; // Restore icon
+            }
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+        #endregion
+
+        private void UpdateStatusIndicator(bool isTracking)
+        {
+            if (isTracking)
+            {
+                StatusIndicator.Fill = (System.Windows.Media.Brush)FindResource("SuccessBrush");
+                StatusText.Text = "Tracking Active";
+            }
+            else
+            {
+                StatusIndicator.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#71717A"));
+                StatusText.Text = "Paused";
+            }
         }
 
         private void PopulateRunningApps()
@@ -168,6 +221,7 @@ namespace DeskWatch
             _timer.Start();
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
+            UpdateStatusIndicator(true);
         }
 
         private void StopButton_Click(object sender, RoutedEventArgs e)
@@ -183,6 +237,7 @@ namespace DeskWatch
             _lastKey = null;
             StartButton.IsEnabled = true;
             StopButton.IsEnabled = false;
+            UpdateStatusIndicator(false);
         }
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
