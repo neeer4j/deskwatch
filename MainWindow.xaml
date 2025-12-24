@@ -94,6 +94,16 @@
                             
                             <Button x:Name="AddAppButton" Click="AddAppButton_Click" Content="Add Application" Tag="&#xE710;" 
                                     Style="{StaticResource SidebarButtonAccent}"/>
+                            
+                            <!-- Divider -->
+                            <Border Height="1" Background="{StaticResource BorderBrush}" Margin="24,20"/>
+                            
+                            <!-- Section: Settings -->
+                            <TextBlock Text="SETTINGS" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" 
+                                       Margin="26,0,0,12"/>
+                            
+                            <Button x:Name="SettingsButton" Click="SettingsButton_Click" Content="Settings" Tag="&#xE713;" 
+                                    Style="{StaticResource SidebarButton}"/>
                         </StackPanel>
                         
                         <!-- Status Footer -->

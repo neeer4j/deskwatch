@@ -10,9 +10,11 @@ namespace DeskWatch.Models
         private TimeSpan _total;
         private ImageSource? _icon;
         private bool _isSelected;
+        private int _focusCount;
 
         public string Key { get; }
         public string DisplayName { get; }
+        public string? ExePath { get; set; }
 
         public ImageSource? Icon
         {
@@ -56,7 +58,18 @@ namespace DeskWatch.Models
 
         public string FormattedTotal => string.Format("{0:00}:{1:00}:{2:00}", (int)Total.TotalHours, Total.Minutes, Total.Seconds);
 
-        public int FocusCount { get; private set; }
+        public int FocusCount
+        {
+            get => _focusCount;
+            set
+            {
+                if (_focusCount != value)
+                {
+                    _focusCount = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         public AppUsage(string key, string displayName)
         {

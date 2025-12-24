@@ -15,15 +15,13 @@ using DeskWatch.Models;
 
 namespace DeskWatch
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         private readonly DispatcherTimer _timer;
+        private readonly DispatcherTimer _saveTimer;
         private readonly Dictionary<string, AppUsage> _usageMap = new();
         private readonly Dictionary<string, ImageSource?> _iconCache = new();
-        private readonly HashSet<string> _runningAppsLastTick = new(); // Track running apps for launch detection
+        private readonly HashSet<string> _runningAppsLastTick = new();
 
         private DateTime _lastTickUtc;
         private string? _lastKey;
@@ -37,17 +35,29 @@ namespace DeskWatch
             InitializeComponent();
             DataContext = this;
 
+            // Initialize settings and auto-start
+            SettingsManager.Initialize();
+
+            // Load saved data
+            LoadSavedData();
+
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _timer.Tick += Timer_Tick;
-            
-            PopulateRunningApps(); // Auto-populate on startup
-            
-            // Initialize running apps set so already-running apps don't count as "launched"
+
+            // Auto-save every 30 seconds
+            _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            _saveTimer.Tick += (s, e) => SaveData();
+            _saveTimer.Start();
+
+            // Initialize running apps set
             foreach (var app in AppUsages)
             {
-                _runningAppsLastTick.Add(app.Key);
+                if (IsAppRunning(app.Key))
+                {
+                    _runningAppsLastTick.Add(app.Key);
+                }
             }
-            
+
             // Auto-start tracking
             _lastKey = GetCurrentAppKey(out _, out _);
             _lastTickUtc = DateTime.UtcNow;
@@ -55,6 +65,54 @@ namespace DeskWatch
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
             UpdateStatusIndicator(true);
+            UpdateEmptyState();
+        }
+
+        private void LoadSavedData()
+        {
+            var savedData = DataManager.Load();
+            foreach (var appData in savedData.TrackedApps)
+            {
+                var app = new AppUsage(appData.Key, appData.DisplayName)
+                {
+                    ExePath = appData.ExePath,
+                    FocusCount = appData.FocusCount
+                };
+
+                // Restore time
+                app.Add(TimeSpan.FromSeconds(appData.TotalSeconds));
+
+                // Try to load icon
+                if (!string.IsNullOrEmpty(appData.ExePath) && File.Exists(appData.ExePath))
+                {
+                    app.Icon = GetAppIcon(appData.ExePath);
+                }
+
+                _usageMap[app.Key] = app;
+                AppUsages.Add(app);
+            }
+        }
+
+        private void SaveData()
+        {
+            DataManager.Save(AppUsages);
+        }
+
+        private bool IsAppRunning(string processName)
+        {
+            try
+            {
+                return Process.GetProcessesByName(processName).Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void UpdateEmptyState()
+        {
+            EmptyState.Visibility = AppUsages.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         #region Window Chrome Handlers
@@ -80,17 +138,18 @@ namespace DeskWatch
             if (this.WindowState == WindowState.Maximized)
             {
                 this.WindowState = WindowState.Normal;
-                MaximizeButton.Content = "\uE922"; // Maximize icon
+                MaximizeButton.Content = "\uE922";
             }
             else
             {
                 this.WindowState = WindowState.Maximized;
-                MaximizeButton.Content = "\uE923"; // Restore icon
+                MaximizeButton.Content = "\uE923";
             }
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
+            SaveData();
             this.Close();
         }
         #endregion
@@ -99,78 +158,13 @@ namespace DeskWatch
         {
             if (isTracking)
             {
-                StatusIndicator.Fill = (System.Windows.Media.Brush)FindResource("SuccessBrush");
+                StatusIndicator.Fill = (Brush)FindResource("SuccessBrush");
                 StatusText.Text = "Tracking Active";
             }
             else
             {
                 StatusIndicator.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#71717A"));
                 StatusText.Text = "Paused";
-            }
-        }
-
-        private void PopulateRunningApps()
-        {
-            // System process names to exclude
-            var excludedProcesses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                "TextInputHost", "WindowsInputExperience", "SystemSettings", "ShellExperienceHost",
-                "SearchHost", "StartMenuExperienceHost", "LockApp", "ApplicationFrameHost",
-                "RuntimeBroker", "svchost", "csrss", "dwm", "explorer", "Taskmgr",
-                "ctfmon", "SecurityHealthSystray", "NVIDIA Share", "NVDisplay.Container",
-                "SearchUI", "Cortana", "GameBar", "GameBarFTServer", "XboxGameBarWidgets"
-            };
-
-            var windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows).ToLowerInvariant();
-
-            var processGroups = Process.GetProcesses()
-                .Where(p => p.MainWindowHandle != IntPtr.Zero && !string.IsNullOrWhiteSpace(p.MainWindowTitle))
-                .Where(p => !excludedProcesses.Contains(p.ProcessName))
-                .GroupBy(p => p.ProcessName);
-
-            foreach (var group in processGroups)
-            {
-                try
-                {
-                    var p = group.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.MainWindowTitle)) ?? group.First();
-                    
-                    // Skip if already added
-                    if (_usageMap.ContainsKey(p.ProcessName))
-                        continue;
-
-                    string? exePath = null;
-                    try
-                    {
-                        exePath = p.MainModule?.FileName;
-                    }
-                    catch { }
-
-                    // Filter out system apps by checking the path
-                    if (!string.IsNullOrEmpty(exePath))
-                    {
-                        var lowerPath = exePath.ToLowerInvariant();
-                        
-                        // Skip apps from Windows system directories
-                        if (lowerPath.StartsWith(windowsDir) || 
-                            lowerPath.Contains("\\windowsapps\\") && lowerPath.Contains("microsoft.") ||
-                            lowerPath.Contains("\\system32\\") ||
-                            lowerPath.Contains("\\syswow64\\"))
-                        {
-                            continue;
-                        }
-                    }
-
-                    var app = new AppUsage(p.ProcessName, p.MainWindowTitle);
-                    
-                    if (!string.IsNullOrEmpty(exePath))
-                    {
-                        app.Icon = GetAppIcon(exePath);
-                    }
-                    
-                    _usageMap[p.ProcessName] = app;
-                    AppUsages.Add(app);
-                }
-                catch { }
             }
         }
 
@@ -182,12 +176,23 @@ namespace DeskWatch
                 var p = dialog.SelectedProcess;
                 if (!_usageMap.ContainsKey(p.ProcessName))
                 {
-                    var app = new AppUsage(p.ProcessName, p.MainWindowTitle);
-                    app.Icon = p.Icon;
+                    var app = new AppUsage(p.ProcessName, p.MainWindowTitle)
+                    {
+                        ExePath = p.ExePath,
+                        Icon = p.Icon
+                    };
                     _usageMap[p.ProcessName] = app;
                     AppUsages.Add(app);
+                    UpdateEmptyState();
+                    SaveData();
                 }
             }
+        }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var settingsWindow = new SettingsWindow { Owner = this };
+            settingsWindow.ShowDialog();
         }
 
         private void RemoveApp_Click(object sender, RoutedEventArgs e)
@@ -198,25 +203,17 @@ namespace DeskWatch
                 AppUsages.Remove(_selectedApp);
                 _selectedApp = null;
                 DetailsPanel.Visibility = Visibility.Hidden;
-                NoSelectionText.Visibility = Visibility.Visible;
-                if (NoSelectionSubText != null) NoSelectionSubText.Visibility = Visibility.Visible;
+                NoSelectionPanel.Visibility = Visibility.Visible;
+                UpdateEmptyState();
+                SaveData();
             }
         }
-
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
             if (_timer.IsEnabled) return;
 
-            _lastKey = GetCurrentAppKey(out var displayName, out var exePath);
-            
-            // Only track if it's already in the whitelist
-            // No auto-add here anymore.
-            if (_lastKey != null && !_usageMap.ContainsKey(_lastKey))
-            {
-               // Do nothing. It's not a tracked app.
-            }
-            
+            _lastKey = GetCurrentAppKey(out _, out _);
             _lastTickUtc = DateTime.UtcNow;
             _timer.Start();
             StartButton.IsEnabled = false;
@@ -238,26 +235,36 @@ namespace DeskWatch
             StartButton.IsEnabled = true;
             StopButton.IsEnabled = false;
             UpdateStatusIndicator(false);
+            SaveData();
         }
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_timer.IsEnabled)
+            var result = MessageBox.Show(
+                "Are you sure you want to reset all tracking data? This cannot be undone.",
+                "Reset All Data",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
             {
-                StopButton_Click(sender, e);
+                if (_timer.IsEnabled)
+                {
+                    StopButton_Click(sender, e);
+                }
+
+                foreach (var app in AppUsages)
+                {
+                    app.Reset();
+                }
+                SaveData();
             }
-            
-            foreach (var app in AppUsages)
-            {
-                app.Reset();
-            }
-            // Do not clear the list or cache
         }
 
         private void Timer_Tick(object? sender, EventArgs e)
         {
             var now = DateTime.UtcNow;
-            var currentKey = GetCurrentAppKey(out var currentDisplayName, out var currentExePath);
+            var currentKey = GetCurrentAppKey(out _, out _);
 
             // Attribute elapsed time since last tick to the previously active app
             if (_lastKey is not null)
@@ -265,7 +272,6 @@ namespace DeskWatch
                 var delta = now - _lastTickUtc;
                 if (delta > TimeSpan.Zero)
                 {
-                    // Update time for the PREVIOUS app (the one that was active)
                     if (_usageMap.TryGetValue(_lastKey, out var lastUsage))
                     {
                         lastUsage.Add(delta);
@@ -287,8 +293,7 @@ namespace DeskWatch
                     if (runningProcessNames.Contains(app.Key))
                     {
                         currentlyRunning.Add(app.Key);
-                        
-                        // If app is running now but wasn't running last tick = new launch
+
                         if (!_runningAppsLastTick.Contains(app.Key))
                         {
                             app.IncrementFocusCount();
@@ -298,7 +303,6 @@ namespace DeskWatch
             }
             catch { }
 
-            // Update the running apps set for next tick
             _runningAppsLastTick.Clear();
             foreach (var key in currentlyRunning)
             {
@@ -312,26 +316,11 @@ namespace DeskWatch
             if (_selectedApp != null && DetailsPanel.Visibility == Visibility.Visible)
             {
                 DetailsTime.Text = _selectedApp.FormattedTotal;
-                 if (FindName("DetailsCount") is TextBlock countBlock)
+                if (FindName("DetailsCount") is TextBlock countBlock)
                 {
                     countBlock.Text = _selectedApp.FocusCount.ToString();
                 }
             }
-        }
-
-        private void AddTime(string key, TimeSpan delta, string? displayName, string? exePath)
-        {
-            if (!_usageMap.TryGetValue(key, out var usage))
-            {
-                usage = new AppUsage(key, displayName ?? key);
-                if (!string.IsNullOrEmpty(exePath))
-                {
-                    usage.Icon = GetAppIcon(exePath);
-                }
-                _usageMap[key] = usage;
-                AppUsages.Add(usage);
-            }
-            usage.Add(delta);
         }
 
         private string? GetCurrentAppKey(out string? displayName, out string? exePath)
@@ -339,10 +328,7 @@ namespace DeskWatch
             displayName = null;
             exePath = null;
             IntPtr hwnd = GetForegroundWindow();
-            if (hwnd == IntPtr.Zero)
-            {
-                return null;
-            }
+            if (hwnd == IntPtr.Zero) return null;
 
             try
             {
@@ -352,19 +338,16 @@ namespace DeskWatch
 
                 using var proc = Process.GetProcessById((int)pid);
                 var key = proc.ProcessName;
-                
-                // Try to get MainModule to find exe path, but handle Access Denied
-                try 
-                { 
-                    exePath = proc.MainModule?.FileName; 
-                } 
-                catch 
-                { 
-                    // Access denied or process exited - ignoring exe path
+
+                try
+                {
+                    exePath = proc.MainModule?.FileName;
+                }
+                catch
+                {
                     exePath = null;
                 }
 
-                // Prefer window title, fall back to product name, then process name
                 var title = GetWindowTitle(hwnd);
                 if (!string.IsNullOrWhiteSpace(title))
                 {
@@ -374,7 +357,6 @@ namespace DeskWatch
                 {
                     try
                     {
-                        // Use MainModule only if we have access
                         if (exePath != null)
                         {
                             displayName = proc.MainModule?.FileVersionInfo.ProductName;
@@ -404,7 +386,7 @@ namespace DeskWatch
                 return cached;
             try
             {
-                if (System.IO.File.Exists(exePath))
+                if (File.Exists(exePath))
                 {
                     using var icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
                     if (icon != null)
@@ -431,10 +413,9 @@ namespace DeskWatch
 
         protected override void OnClosed(EventArgs e)
         {
-            if (_timer?.IsEnabled == true)
-            {
-                _timer.Stop();
-            }
+            _timer?.Stop();
+            _saveTimer?.Stop();
+            SaveData();
             base.OnClosed(e);
         }
 
@@ -442,25 +423,19 @@ namespace DeskWatch
         {
             if (sender is Border border && border.Tag is AppUsage app)
             {
-                // Deselect all
                 foreach (var item in AppUsages)
-                    item.GetType().GetProperty("IsSelected")?.SetValue(item, false);
-                // Select this
-                app.GetType().GetProperty("IsSelected")?.SetValue(app, true);
-                _selectedApp = app;
+                    item.IsSelected = false;
                 
-                // Update details panel
+                app.IsSelected = true;
+                _selectedApp = app;
+
                 DetailsPanel.Visibility = Visibility.Visible;
-                NoSelectionText.Visibility = Visibility.Collapsed;
-                // Check if the new subtext exists (it might not if XAML didn't have it, but our new XAML does)
-                var subText = NoSelectionSubText; 
-                if (subText != null) subText.Visibility = Visibility.Collapsed;
+                NoSelectionPanel.Visibility = Visibility.Collapsed;
 
                 DetailsIcon.Source = app.Icon;
                 DetailsName.Text = app.DisplayName;
-                // Just the time string, label is in XAML
                 DetailsTime.Text = app.FormattedTotal;
-                // Bind count if element exists (it does in new XAML)
+                
                 if (FindName("DetailsCount") is TextBlock countBlock)
                 {
                     countBlock.Text = app.FocusCount.ToString();
