@@ -41,7 +41,7 @@
                     <TextBlock Text="STARTUP" FontSize="10" FontWeight="Bold" 
                                Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,12"/>
                     
-                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,20">
+                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,8">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -64,6 +64,35 @@
                                         Background="White" HorizontalAlignment="Left" Margin="2,0,0,0">
                                     <Border.RenderTransform>
                                         <TranslateTransform x:Name="ThumbTranslate" X="0"/>
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    
+                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,20">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Minimize to Tray" FontSize="14" FontWeight="Medium" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Hide to system tray when closing the window" 
+                                           FontSize="12" Foreground="{StaticResource TextMutedBrush}" 
+                                           Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            
+                            <!-- Toggle Switch -->
+                            <Border Grid.Column="1" x:Name="MinimizeToTrayToggle" MouseLeftButtonUp="MinimizeToTrayToggle_Click"
+                                    Width="48" Height="26" CornerRadius="13" Cursor="Hand" Margin="12,0,0,0"
+                                    Background="#3A3A4A">
+                                <Border x:Name="TrayToggleThumb" Width="22" Height="22" CornerRadius="11" 
+                                        Background="White" HorizontalAlignment="Left" Margin="2,0,0,0">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="TrayThumbTranslate" X="0"/>
                                     </Border.RenderTransform>
                                 </Border>
                             </Border>

@@ -9,6 +9,8 @@ namespace DeskWatch
     {
         public bool AutoStartEnabled { get; set; } = true;
         public bool FirstRun { get; set; } = true;
+        public bool MinimizeToTray { get; set; } = true;
+        public bool ShowNotifications { get; set; } = true;
     }
 
     public static class SettingsManager

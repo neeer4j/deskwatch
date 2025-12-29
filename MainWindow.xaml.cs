@@ -12,6 +12,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DeskWatch.Models;
+using Forms = System.Windows.Forms;
+using Drawing = System.Drawing;
 
 namespace DeskWatch
 {
@@ -27,6 +29,10 @@ namespace DeskWatch
         private string? _lastKey;
 
         private AppUsage? _selectedApp;
+        
+        // System Tray
+        private Forms.NotifyIcon? _notifyIcon;
+        private bool _isExiting = false;
 
         public ObservableCollection<AppUsage> AppUsages { get; } = new();
 
@@ -58,6 +64,9 @@ namespace DeskWatch
                 }
             }
 
+            // Initialize system tray
+            InitializeNotifyIcon();
+
             // Auto-start tracking
             _lastKey = GetCurrentAppKey(out _, out _);
             _lastTickUtc = DateTime.UtcNow;
@@ -66,6 +75,82 @@ namespace DeskWatch
             StopButton.IsEnabled = true;
             UpdateStatusIndicator(true);
             UpdateEmptyState();
+        }
+
+        private void InitializeNotifyIcon()
+        {
+            _notifyIcon = new Forms.NotifyIcon();
+            
+            // Load icon from assets
+            var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "deskwatch.ico");
+            if (File.Exists(iconPath))
+            {
+                _notifyIcon.Icon = new Drawing.Icon(iconPath);
+            }
+            else
+            {
+                // Use a default system icon if our icon isn't found
+                _notifyIcon.Icon = Drawing.SystemIcons.Application;
+            }
+            
+            _notifyIcon.Text = "DeskWatch - Tracking Active";
+            _notifyIcon.Visible = true;
+            
+            // Double-click to show window
+            _notifyIcon.DoubleClick += (s, e) => ShowWindow();
+            
+            // Context menu
+            var contextMenu = new Forms.ContextMenuStrip();
+            
+            var showItem = new Forms.ToolStripMenuItem("Show DeskWatch");
+            showItem.Click += (s, e) => ShowWindow();
+            showItem.Font = new Drawing.Font(showItem.Font, Drawing.FontStyle.Bold);
+            contextMenu.Items.Add(showItem);
+            
+            contextMenu.Items.Add(new Forms.ToolStripSeparator());
+            
+            var trackingItem = new Forms.ToolStripMenuItem("Stop Tracking");
+            trackingItem.Click += (s, e) => ToggleTracking(trackingItem);
+            contextMenu.Items.Add(trackingItem);
+            
+            contextMenu.Items.Add(new Forms.ToolStripSeparator());
+            
+            var exitItem = new Forms.ToolStripMenuItem("Exit");
+            exitItem.Click += (s, e) => ExitApplication();
+            contextMenu.Items.Add(exitItem);
+            
+            _notifyIcon.ContextMenuStrip = contextMenu;
+        }
+
+        private void ShowWindow()
+        {
+            this.Show();
+            this.WindowState = WindowState.Normal;
+            this.Activate();
+        }
+
+        private void ToggleTracking(Forms.ToolStripMenuItem menuItem)
+        {
+            if (_timer.IsEnabled)
+            {
+                StopButton_Click(this, new RoutedEventArgs());
+                menuItem.Text = "Start Tracking";
+                _notifyIcon!.Text = "DeskWatch - Paused";
+            }
+            else
+            {
+                StartButton_Click(this, new RoutedEventArgs());
+                menuItem.Text = "Stop Tracking";
+                _notifyIcon!.Text = "DeskWatch - Tracking Active";
+            }
+        }
+
+        private void ExitApplication()
+        {
+            _isExiting = true;
+            SaveData();
+            _notifyIcon?.Dispose();
+            Application.Current.Shutdown();
         }
 
         private void LoadSavedData()
@@ -149,8 +234,15 @@ namespace DeskWatch
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            SaveData();
-            this.Close();
+            if (SettingsManager.Settings.MinimizeToTray && !_isExiting)
+            {
+                // Minimize to tray instead of closing
+                this.Hide();
+            }
+            else
+            {
+                ExitApplication();
+            }
         }
         #endregion
 
@@ -416,6 +508,7 @@ namespace DeskWatch
             _timer?.Stop();
             _saveTimer?.Stop();
             SaveData();
+            _notifyIcon?.Dispose();
             base.OnClosed(e);
         }
 

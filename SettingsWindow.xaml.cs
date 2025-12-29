@@ -7,6 +7,7 @@ namespace DeskWatch
     public partial class SettingsWindow : Window
     {
         private bool _autoStartEnabled;
+        private bool _minimizeToTrayEnabled;
 
         public SettingsWindow()
         {
@@ -17,7 +18,9 @@ namespace DeskWatch
         private void LoadSettings()
         {
             _autoStartEnabled = SettingsManager.Settings.AutoStartEnabled;
-            UpdateToggleVisual(_autoStartEnabled, false);
+            _minimizeToTrayEnabled = SettingsManager.Settings.MinimizeToTray;
+            UpdateAutoStartToggleVisual(_autoStartEnabled, false);
+            UpdateTrayToggleVisual(_minimizeToTrayEnabled, false);
         }
 
         private void TitleBar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -32,10 +35,18 @@ namespace DeskWatch
         {
             _autoStartEnabled = !_autoStartEnabled;
             SettingsManager.SetAutoStart(_autoStartEnabled);
-            UpdateToggleVisual(_autoStartEnabled, true);
+            UpdateAutoStartToggleVisual(_autoStartEnabled, true);
         }
 
-        private void UpdateToggleVisual(bool isOn, bool animate)
+        private void MinimizeToTrayToggle_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            _minimizeToTrayEnabled = !_minimizeToTrayEnabled;
+            SettingsManager.Settings.MinimizeToTray = _minimizeToTrayEnabled;
+            SettingsManager.Save();
+            UpdateTrayToggleVisual(_minimizeToTrayEnabled, true);
+        }
+
+        private void UpdateAutoStartToggleVisual(bool isOn, bool animate)
         {
             var targetX = isOn ? 22.0 : 0.0;
             var targetColor = isOn ? 
@@ -57,6 +68,31 @@ namespace DeskWatch
             else
             {
                 ThumbTranslate.X = targetX;
+            }
+        }
+
+        private void UpdateTrayToggleVisual(bool isOn, bool animate)
+        {
+            var targetX = isOn ? 22.0 : 0.0;
+            var targetColor = isOn ? 
+                (Brush)FindResource("AccentGradient") : 
+                new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3A3A4A"));
+
+            MinimizeToTrayToggle.Background = targetColor;
+
+            if (animate)
+            {
+                var animation = new DoubleAnimation
+                {
+                    To = targetX,
+                    Duration = System.TimeSpan.FromMilliseconds(150),
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+                TrayThumbTranslate.BeginAnimation(TranslateTransform.XProperty, animation);
+            }
+            else
+            {
+                TrayThumbTranslate.X = targetX;
             }
         }
 
