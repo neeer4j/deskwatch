@@ -11,6 +11,8 @@ namespace DeskWatch
         public bool FirstRun { get; set; } = true;
         public bool MinimizeToTray { get; set; } = true;
         public bool ShowNotifications { get; set; } = true;
+        public bool IdleDetectionEnabled { get; set; } = true;
+        public int IdleTimeoutMinutes { get; set; } = 5;
     }
 
     public static class SettingsManager

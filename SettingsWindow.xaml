@@ -1,7 +1,7 @@
 <Window x:Class="DeskWatch.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Settings" Height="400" Width="420"
+        Title="Settings" Height="480" Width="420"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" FontFamily="Segoe UI">
@@ -93,6 +93,35 @@
                                         Background="White" HorizontalAlignment="Left" Margin="2,0,0,0">
                                     <Border.RenderTransform>
                                         <TranslateTransform x:Name="TrayThumbTranslate" X="0"/>
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    
+                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,20">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Idle Detection" FontSize="14" FontWeight="Medium" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Pause tracking when you're away from the computer" 
+                                           FontSize="12" Foreground="{StaticResource TextMutedBrush}" 
+                                           Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            
+                            <!-- Toggle Switch -->
+                            <Border Grid.Column="1" x:Name="IdleDetectionToggle" MouseLeftButtonUp="IdleDetectionToggle_Click"
+                                    Width="48" Height="26" CornerRadius="13" Cursor="Hand" Margin="12,0,0,0"
+                                    Background="#3A3A4A">
+                                <Border x:Name="IdleToggleThumb" Width="22" Height="22" CornerRadius="11" 
+                                        Background="White" HorizontalAlignment="Left" Margin="2,0,0,0">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="IdleThumbTranslate" X="0"/>
                                     </Border.RenderTransform>
                                 </Border>
                             </Border>

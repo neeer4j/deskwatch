@@ -33,6 +33,9 @@ namespace DeskWatch
         // System Tray
         private Forms.NotifyIcon? _notifyIcon;
         private bool _isExiting = false;
+        
+        // Idle detection
+        private bool _isIdle = false;
 
         public ObservableCollection<AppUsage> AppUsages { get; } = new();
 
@@ -170,7 +173,11 @@ namespace DeskWatch
                 // Try to load icon
                 if (!string.IsNullOrEmpty(appData.ExePath) && File.Exists(appData.ExePath))
                 {
-                    app.Icon = GetAppIcon(appData.ExePath);
+                    app.Icon = IconHelper.GetAppIcon(appData.ExePath);
+                    if (app.Icon != null)
+                    {
+                        _iconCache[appData.ExePath] = app.Icon;
+                    }
                 }
 
                 _usageMap[app.Key] = app;
@@ -356,6 +363,39 @@ namespace DeskWatch
         private void Timer_Tick(object? sender, EventArgs e)
         {
             var now = DateTime.UtcNow;
+            
+            // Check for idle state if enabled
+            if (SettingsManager.Settings.IdleDetectionEnabled)
+            {
+                var idleTimeout = TimeSpan.FromMinutes(SettingsManager.Settings.IdleTimeoutMinutes);
+                var nowIdle = IdleDetector.IsIdle(idleTimeout);
+                
+                if (nowIdle && !_isIdle)
+                {
+                    // Just went idle - don't count this time
+                    _isIdle = true;
+                    _notifyIcon!.Text = "DeskWatch - Idle (Paused)";
+                    StatusText.Text = "Idle - Paused";
+                    StatusIndicator.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F59E0B")); // Amber
+                }
+                else if (!nowIdle && _isIdle)
+                {
+                    // Just returned from idle
+                    _isIdle = false;
+                    _lastTickUtc = now; // Reset timer to avoid counting idle time
+                    _notifyIcon!.Text = "DeskWatch - Tracking Active";
+                    StatusText.Text = "Tracking Active";
+                    StatusIndicator.Fill = (Brush)FindResource("SuccessBrush");
+                }
+                
+                if (_isIdle)
+                {
+                    _lastKey = null;
+                    _lastTickUtc = now;
+                    return; // Don't track while idle
+                }
+            }
+            
             var currentKey = GetCurrentAppKey(out _, out _);
 
             // Attribute elapsed time since last tick to the previously active app
@@ -476,31 +516,10 @@ namespace DeskWatch
         {
             if (_iconCache.TryGetValue(exePath, out var cached))
                 return cached;
-            try
-            {
-                if (File.Exists(exePath))
-                {
-                    using var icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
-                    if (icon != null)
-                    {
-                        using var bmp = icon.ToBitmap();
-                        var ms = new MemoryStream();
-                        bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                        ms.Position = 0;
-                        var img = new BitmapImage();
-                        img.BeginInit();
-                        img.StreamSource = ms;
-                        img.CacheOption = BitmapCacheOption.OnLoad;
-                        img.EndInit();
-                        img.Freeze();
-                        _iconCache[exePath] = img;
-                        return img;
-                    }
-                }
-            }
-            catch { }
-            _iconCache[exePath] = null;
-            return null;
+            
+            var icon = IconHelper.GetAppIcon(exePath);
+            _iconCache[exePath] = icon;
+            return icon;
         }
 
         protected override void OnClosed(EventArgs e)

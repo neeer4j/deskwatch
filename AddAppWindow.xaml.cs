@@ -179,26 +179,7 @@ namespace DeskWatch
 
         private ImageSource? GetAppIcon(string exePath)
         {
-            try
-            {
-                using var icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
-                if (icon != null)
-                {
-                    using var bmp = icon.ToBitmap();
-                    var ms = new MemoryStream();
-                    bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                    ms.Position = 0;
-                    var img = new BitmapImage();
-                    img.BeginInit();
-                    img.StreamSource = ms;
-                    img.CacheOption = BitmapCacheOption.OnLoad;
-                    img.EndInit();
-                    img.Freeze();
-                    return img;
-                }
-            }
-            catch { }
-            return null;
+            return IconHelper.GetAppIcon(exePath);
         }
 
         private void Add_Click(object sender, RoutedEventArgs e)

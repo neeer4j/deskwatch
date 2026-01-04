@@ -8,6 +8,7 @@ namespace DeskWatch
     {
         private bool _autoStartEnabled;
         private bool _minimizeToTrayEnabled;
+        private bool _idleDetectionEnabled;
 
         public SettingsWindow()
         {
@@ -19,8 +20,10 @@ namespace DeskWatch
         {
             _autoStartEnabled = SettingsManager.Settings.AutoStartEnabled;
             _minimizeToTrayEnabled = SettingsManager.Settings.MinimizeToTray;
+            _idleDetectionEnabled = SettingsManager.Settings.IdleDetectionEnabled;
             UpdateAutoStartToggleVisual(_autoStartEnabled, false);
             UpdateTrayToggleVisual(_minimizeToTrayEnabled, false);
+            UpdateIdleToggleVisual(_idleDetectionEnabled, false);
         }
 
         private void TitleBar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -93,6 +96,39 @@ namespace DeskWatch
             else
             {
                 TrayThumbTranslate.X = targetX;
+            }
+        }
+
+        private void IdleDetectionToggle_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            _idleDetectionEnabled = !_idleDetectionEnabled;
+            SettingsManager.Settings.IdleDetectionEnabled = _idleDetectionEnabled;
+            SettingsManager.Save();
+            UpdateIdleToggleVisual(_idleDetectionEnabled, true);
+        }
+
+        private void UpdateIdleToggleVisual(bool isOn, bool animate)
+        {
+            var targetX = isOn ? 22.0 : 0.0;
+            var targetColor = isOn ? 
+                (Brush)FindResource("AccentGradient") : 
+                new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3A3A4A"));
+
+            IdleDetectionToggle.Background = targetColor;
+
+            if (animate)
+            {
+                var animation = new DoubleAnimation
+                {
+                    To = targetX,
+                    Duration = System.TimeSpan.FromMilliseconds(150),
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+                IdleThumbTranslate.BeginAnimation(TranslateTransform.XProperty, animation);
+            }
+            else
+            {
+                IdleThumbTranslate.X = targetX;
             }
         }
 
