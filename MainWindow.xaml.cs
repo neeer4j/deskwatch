@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -8,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -36,6 +38,11 @@ namespace DeskWatch
         
         // Idle detection
         private bool _isIdle = false;
+        
+        // Search and Sort
+        private string _searchText = "";
+        private string _sortMode = "time_desc";
+        private ICollectionView? _filteredView;
 
         public ObservableCollection<AppUsage> AppUsages { get; } = new();
 
@@ -44,11 +51,13 @@ namespace DeskWatch
             InitializeComponent();
             DataContext = this;
 
-            // Initialize settings and auto-start
-            SettingsManager.Initialize();
-
             // Load saved data
             LoadSavedData();
+            
+            // Setup filtering/sorting
+            _filteredView = CollectionViewSource.GetDefaultView(AppUsages);
+            _filteredView.Filter = AppFilter;
+            ApplySort();
 
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _timer.Tick += Timer_Tick;
@@ -78,6 +87,7 @@ namespace DeskWatch
             StopButton.IsEnabled = true;
             UpdateStatusIndicator(true);
             UpdateEmptyState();
+            UpdateTodayTime();
         }
 
         private void InitializeNotifyIcon()
@@ -453,6 +463,9 @@ namespace DeskWatch
                     countBlock.Text = _selectedApp.FocusCount.ToString();
                 }
             }
+            
+            // Update today's total time display
+            UpdateTodayTime();
         }
 
         private string? GetCurrentAppKey(out string? displayName, out string? exePath)
@@ -554,6 +567,67 @@ namespace DeskWatch
                 }
             }
         }
+
+        #region Search, Sort, and Today's Time
+        private bool AppFilter(object item)
+        {
+            if (string.IsNullOrWhiteSpace(_searchText))
+                return true;
+
+            if (item is AppUsage app)
+            {
+                return app.DisplayName.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                       app.Key.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+            }
+            return false;
+        }
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            _searchText = SearchBox.Text;
+            SearchPlaceholder.Visibility = string.IsNullOrEmpty(_searchText) ? Visibility.Visible : Visibility.Collapsed;
+            _filteredView?.Refresh();
+        }
+
+        private void SortComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SortComboBox.SelectedItem is ComboBoxItem item && item.Tag is string sortTag)
+            {
+                _sortMode = sortTag;
+                ApplySort();
+            }
+        }
+
+        private void ApplySort()
+        {
+            if (_filteredView == null) return;
+
+            _filteredView.SortDescriptions.Clear();
+            switch (_sortMode)
+            {
+                case "time_desc":
+                    _filteredView.SortDescriptions.Add(new SortDescription("Total", ListSortDirection.Descending));
+                    break;
+                case "name_asc":
+                    _filteredView.SortDescriptions.Add(new SortDescription("DisplayName", ListSortDirection.Ascending));
+                    break;
+                case "sessions_desc":
+                    _filteredView.SortDescriptions.Add(new SortDescription("FocusCount", ListSortDirection.Descending));
+                    break;
+            }
+        }
+
+        private void UpdateTodayTime()
+        {
+            var totalToday = TimeSpan.Zero;
+            foreach (var app in AppUsages)
+            {
+                totalToday += app.Total;
+            }
+            TodayTimeText.Text = string.Format("{0:00}:{1:00}:{2:00}", 
+                (int)totalToday.TotalHours, totalToday.Minutes, totalToday.Seconds);
+        }
+        #endregion
 
         #region Win32
         [DllImport("user32.dll")]

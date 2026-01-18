@@ -11,6 +11,10 @@ namespace DeskWatch
 
         private void Continue_Click(object sender, RoutedEventArgs e)
         {
+            // Mark first run as complete
+            SettingsManager.Settings.FirstRun = false;
+            SettingsManager.Save();
+
             var main = new MainWindow();
             main.Show();
             this.Close();

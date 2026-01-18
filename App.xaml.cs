@@ -1,6 +1,4 @@
-﻿using System.Configuration;
-using System.Data;
-using System.Windows;
+﻿using System.Windows;
 
 namespace DeskWatch
 {
@@ -12,6 +10,27 @@ namespace DeskWatch
         public App()
         {
             this.DispatcherUnhandledException += App_DispatcherUnhandledException;
+        }
+
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            // Initialize settings first to know if this is first run
+            SettingsManager.Initialize();
+
+            if (SettingsManager.Settings.FirstRun)
+            {
+                // Show welcome window for first-time users
+                var welcome = new WelcomeWindow();
+                welcome.Show();
+            }
+            else
+            {
+                // Show main window for returning users
+                var main = new MainWindow();
+                main.Show();
+            }
         }
 
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)

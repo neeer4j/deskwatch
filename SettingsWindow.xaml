@@ -132,6 +132,48 @@
                     <TextBlock Text="DATA" FontSize="10" FontWeight="Bold" 
                                Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,12"/>
                     
+                    <!-- Export/Import -->
+                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Export Data" FontSize="14" FontWeight="Medium" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Save your tracking data to a JSON file" 
+                                           FontSize="12" Foreground="{StaticResource TextMutedBrush}" 
+                                           Margin="0,4,0,0"/>
+                            </StackPanel>
+                            
+                            <Button Grid.Column="1" Content="Export" Click="ExportData_Click" 
+                                    Style="{StaticResource SecondaryButton}" Padding="20,10"/>
+                        </Grid>
+                    </Border>
+                    
+                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,20">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Import Data" FontSize="14" FontWeight="Medium" 
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Load tracking data from a JSON file" 
+                                           FontSize="12" Foreground="{StaticResource TextMutedBrush}" 
+                                           Margin="0,4,0,0"/>
+                            </StackPanel>
+                            
+                            <Button Grid.Column="1" Content="Import" Click="ImportData_Click" 
+                                    Style="{StaticResource SecondaryButton}" Padding="20,10"/>
+                        </Grid>
+                    </Border>
+                    
+                    <!-- Clear Data -->
                     <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="16" Margin="0,0,0,20">
                         <StackPanel>
                             <TextBlock Text="Clear All Data" FontSize="14" FontWeight="Medium" 

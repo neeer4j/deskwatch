@@ -109,13 +109,26 @@
                         <!-- Status Footer -->
                         <Border Grid.Row="1" Background="#08FFFFFF" Padding="20,16" Margin="12,0,12,12" CornerRadius="10">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <!-- Today's Time -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
+                                               Foreground="{StaticResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <StackPanel Margin="10,0,0,0">
+                                        <TextBlock Text="TODAY" FontSize="9" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock x:Name="TodayTimeText" Text="00:00:00" FontSize="18" FontWeight="SemiBold" 
+                                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                
+                                <!-- Divider -->
+                                <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,0,0,12"/>
+                                
+                                <!-- Status -->
+                                <StackPanel Orientation="Horizontal">
                                     <Ellipse Width="8" Height="8" Fill="{StaticResource SuccessBrush}" x:Name="StatusIndicator"/>
                                     <TextBlock x:Name="StatusText" Text="Ready" FontSize="12" FontWeight="SemiBold" 
                                                Foreground="{StaticResource TextPrimaryBrush}" Margin="10,0,0,0"/>
                                 </StackPanel>
-                                <TextBlock Text="Tracking whitelisted applications only" FontSize="11" 
-                                           Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -131,18 +144,59 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     
-                    <!-- Header -->
-                    <Border Padding="32,28,32,20">
-                        <StackPanel>
+                    <!-- Header with Search & Sort -->
+                    <Border Padding="32,24,32,16">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <!-- Title Row -->
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Tracked Applications" FontSize="26" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                                 <Border Background="{StaticResource AccentGradient}" CornerRadius="12" Padding="10,4" Margin="16,0,0,0" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding AppUsages.Count, FallbackValue=0}" FontSize="12" FontWeight="Bold" Foreground="White"/>
                                 </Border>
                             </StackPanel>
-                            <TextBlock Text="Click on an app to view detailed statistics" FontSize="13" 
-                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,0"/>
-                        </StackPanel>
+                            
+                            <!-- Search & Sort Row -->
+                            <Grid Grid.Row="1" Margin="0,16,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" MaxWidth="320"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <!-- Search Box -->
+                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" 
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="12,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
+                                                   Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBox x:Name="SearchBox" Grid.Column="1" Background="Transparent" BorderThickness="0"
+                                                 Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center"
+                                                 TextChanged="SearchBox_TextChanged" CaretBrush="{StaticResource AccentPrimaryBrush}"/>
+                                        <TextBlock x:Name="SearchPlaceholder" Grid.Column="1" Text="Search applications..." 
+                                                   FontSize="13" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"
+                                                   IsHitTestVisible="False" Visibility="Visible"/>
+                                    </Grid>
+                                </Border>
+                                
+                                <!-- Sort Dropdown -->
+                                <ComboBox x:Name="SortComboBox" Grid.Column="1" Margin="12,0,0,0" 
+                                          Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextSecondaryBrush}"
+                                          BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14,10"
+                                          FontSize="13" MinWidth="150" SelectionChanged="SortComboBox_SelectionChanged">
+                                    <ComboBoxItem Content="Sort by Time ↓" IsSelected="True" Tag="time_desc"/>
+                                    <ComboBoxItem Content="Sort by Name A-Z" Tag="name_asc"/>
+                                    <ComboBoxItem Content="Sort by Sessions ↓" Tag="sessions_desc"/>
+                                </ComboBox>
+                            </Grid>
+                        </Grid>
                     </Border>
                     
                     <!-- App Cards Grid -->
