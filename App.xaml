@@ -8,20 +8,20 @@
             <!--                        COLOR PALETTE                             -->
             <!-- ═══════════════════════════════════════════════════════════════ -->
             
-            <!-- Primary Accent (Purple-Blue Gradient) -->
-            <Color x:Key="AccentPrimaryColor">#6366F1</Color>
-            <Color x:Key="AccentSecondaryColor">#8B5CF6</Color>
-            <Color x:Key="AccentTertiaryColor">#A855F7</Color>
+            <!-- Primary Accent (Cyan-Teal) -->
+            <Color x:Key="AccentPrimaryColor">#06B6D4</Color>
+            <Color x:Key="AccentSecondaryColor">#14B8A6</Color>
+            <Color x:Key="AccentTertiaryColor">#22D3EE</Color>
             <SolidColorBrush x:Key="AccentPrimaryBrush" Color="{StaticResource AccentPrimaryColor}"/>
             <SolidColorBrush x:Key="AccentSecondaryBrush" Color="{StaticResource AccentSecondaryColor}"/>
             
-            <!-- Background Colors -->
-            <Color x:Key="BackgroundDarkColor">#0A0A0F</Color>
-            <Color x:Key="BackgroundMediumColor">#12121A</Color>
-            <Color x:Key="BackgroundLightColor">#1A1A28</Color>
-            <Color x:Key="SurfaceColor">#22222E</Color>
-            <Color x:Key="SurfaceHoverColor">#2A2A3A</Color>
-            <Color x:Key="SurfaceSelectedColor">#32324A</Color>
+            <!-- Background Colors (Grey Scale) -->
+            <Color x:Key="BackgroundDarkColor">#1A1A1A</Color>
+            <Color x:Key="BackgroundMediumColor">#242424</Color>
+            <Color x:Key="BackgroundLightColor">#2E2E2E</Color>
+            <Color x:Key="SurfaceColor">#383838</Color>
+            <Color x:Key="SurfaceHoverColor">#444444</Color>
+            <Color x:Key="SurfaceSelectedColor">#505050</Color>
             <SolidColorBrush x:Key="BackgroundDarkBrush" Color="{StaticResource BackgroundDarkColor}"/>
             <SolidColorBrush x:Key="BackgroundMediumBrush" Color="{StaticResource BackgroundMediumColor}"/>
             <SolidColorBrush x:Key="BackgroundLightBrush" Color="{StaticResource BackgroundLightColor}"/>
@@ -31,15 +31,15 @@
             
             <!-- Text Colors -->
             <Color x:Key="TextPrimaryColor">#FFFFFF</Color>
-            <Color x:Key="TextSecondaryColor">#A1A1AA</Color>
-            <Color x:Key="TextMutedColor">#71717A</Color>
+            <Color x:Key="TextSecondaryColor">#B0B0B0</Color>
+            <Color x:Key="TextMutedColor">#808080</Color>
             <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}"/>
             <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
             <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}"/>
             
             <!-- Border Colors -->
-            <Color x:Key="BorderColor">#2A2A3A</Color>
-            <Color x:Key="BorderHoverColor">#3A3A4A</Color>
+            <Color x:Key="BorderColor">#404040</Color>
+            <Color x:Key="BorderHoverColor">#505050</Color>
             <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
             <SolidColorBrush x:Key="BorderHoverBrush" Color="{StaticResource BorderHoverColor}"/>
             
@@ -57,8 +57,7 @@
             
             <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
                 <GradientStop Color="{StaticResource AccentPrimaryColor}" Offset="0"/>
-                <GradientStop Color="{StaticResource AccentSecondaryColor}" Offset="0.5"/>
-                <GradientStop Color="{StaticResource AccentTertiaryColor}" Offset="1"/>
+                <GradientStop Color="{StaticResource AccentSecondaryColor}" Offset="1"/>
             </LinearGradientBrush>
             
             <LinearGradientBrush x:Key="BackgroundGradient" StartPoint="0,0" EndPoint="1,1">
@@ -68,13 +67,13 @@
             </LinearGradientBrush>
             
             <LinearGradientBrush x:Key="SidebarGradient" StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#14141E" Offset="0"/>
-                <GradientStop Color="#0F0F16" Offset="1"/>
+                <GradientStop Color="#1E1E1E" Offset="0"/>
+                <GradientStop Color="#1A1A1A" Offset="1"/>
             </LinearGradientBrush>
             
             <LinearGradientBrush x:Key="CardGradient" StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#1E1E2A" Offset="0"/>
-                <GradientStop Color="#16161F" Offset="1"/>
+                <GradientStop Color="#333333" Offset="0"/>
+                <GradientStop Color="#2A2A2A" Offset="1"/>
             </LinearGradientBrush>
             
             <!-- Glass Effect (Semi-transparent) -->

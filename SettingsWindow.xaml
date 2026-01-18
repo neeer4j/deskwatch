@@ -21,7 +21,7 @@
             </Grid.RowDefinitions>
             
             <!-- Custom Title Bar -->
-            <Border Background="#0A0A12" CornerRadius="16,16,0,0" MouseLeftButtonDown="TitleBar_MouseDown">
+            <Border Background="#1A1A1A" CornerRadius="16,16,0,0" MouseLeftButtonDown="TitleBar_MouseDown">
                 <Grid>
                     <StackPanel Orientation="Horizontal" Margin="18,0" VerticalAlignment="Center">
                         <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
@@ -224,7 +224,7 @@
             </ScrollViewer>
             
             <!-- Footer -->
-            <Border Grid.Row="2" Padding="24,16" Background="#0A0A12" CornerRadius="0,0,16,16">
+            <Border Grid.Row="2" Padding="24,16" Background="#1A1A1A" CornerRadius="0,0,16,16">
                 <Button Content="Done" Click="Close_Click" Style="{StaticResource PrimaryButton}" 
                         HorizontalAlignment="Right" Padding="32,12"/>
             </Border>

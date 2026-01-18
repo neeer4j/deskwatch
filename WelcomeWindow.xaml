@@ -30,9 +30,9 @@
     <Border CornerRadius="20" MouseLeftButtonDown="Window_MouseDown">
         <Border.Background>
             <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#0A0A12" Offset="0"/>
-                <GradientStop Color="#12121F" Offset="0.5"/>
-                <GradientStop Color="#1A1A2E" Offset="1"/>
+                <GradientStop Color="#1A1A1A" Offset="0"/>
+                <GradientStop Color="#242424" Offset="0.5"/>
+                <GradientStop Color="#2E2E2E" Offset="1"/>
             </LinearGradientBrush>
         </Border.Background>
         <Border.Effect>

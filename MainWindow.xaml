@@ -25,7 +25,7 @@
             <!--                      CUSTOM TITLE BAR                            -->
             <!-- ═══════════════════════════════════════════════════════════════ -->
             
-            <Border Grid.Row="0" Background="#0A0A0F" CornerRadius="12,12,0,0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Border Grid.Row="0" Background="#1A1A1A" CornerRadius="12,12,0,0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -393,6 +393,117 @@
                             <TextBlock x:Name="NoSelectionSubText" Text="to view usage statistics" FontSize="13" 
                                        Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,0" HorizontalAlignment="Center"/>
                         </StackPanel>
+                        
+                        <!-- Inline Settings Panel -->
+                        <ScrollViewer x:Name="InlineSettingsPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Padding="24,20">
+                            <StackPanel>
+                                <!-- Header -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="18" 
+                                               Foreground="{StaticResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Settings" FontSize="20" FontWeight="Bold" 
+                                               Foreground="{StaticResource TextPrimaryBrush}" Margin="12,0,0,0"/>
+                                </StackPanel>
+                                
+                                <!-- Startup Section -->
+                                <TextBlock Text="STARTUP" FontSize="10" FontWeight="Bold" 
+                                           Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,12"/>
+                                
+                                <Border Background="#10FFFFFF" CornerRadius="12" Padding="16" Margin="0,0,0,8">
+                                    <Grid>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Start with Windows" FontSize="14" FontWeight="Medium" 
+                                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Launch DeskWatch on login" FontSize="11" 
+                                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        <Border x:Name="InlineAutoStartToggle" HorizontalAlignment="Right" 
+                                                Width="44" Height="24" CornerRadius="12" Cursor="Hand" Background="#404040"
+                                                MouseLeftButtonUp="InlineAutoStartToggle_Click">
+                                            <Border x:Name="InlineAutoStartThumb" Width="20" Height="20" CornerRadius="10" 
+                                                    Background="White" HorizontalAlignment="Left" Margin="2,0,0,0">
+                                                <Border.RenderTransform>
+                                                    <TranslateTransform x:Name="InlineAutoStartTranslate" X="0"/>
+                                                </Border.RenderTransform>
+                                            </Border>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                                
+                                <Border Background="#10FFFFFF" CornerRadius="12" Padding="16" Margin="0,0,0,8">
+                                    <Grid>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Minimize to Tray" FontSize="14" FontWeight="Medium" 
+                                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Hide to tray when closing" FontSize="11" 
+                                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        <Border x:Name="InlineTrayToggle" HorizontalAlignment="Right" 
+                                                Width="44" Height="24" CornerRadius="12" Cursor="Hand" Background="#404040"
+                                                MouseLeftButtonUp="InlineTrayToggle_Click">
+                                            <Border x:Name="InlineTrayThumb" Width="20" Height="20" CornerRadius="10" 
+                                                    Background="White" HorizontalAlignment="Left" Margin="2,0,0,0">
+                                                <Border.RenderTransform>
+                                                    <TranslateTransform x:Name="InlineTrayTranslate" X="0"/>
+                                                </Border.RenderTransform>
+                                            </Border>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                                
+                                <Border Background="#10FFFFFF" CornerRadius="12" Padding="16" Margin="0,0,0,24">
+                                    <Grid>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Idle Detection" FontSize="14" FontWeight="Medium" 
+                                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Pause when away" FontSize="11" 
+                                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        <Border x:Name="InlineIdleToggle" HorizontalAlignment="Right" 
+                                                Width="44" Height="24" CornerRadius="12" Cursor="Hand" Background="#404040"
+                                                MouseLeftButtonUp="InlineIdleToggle_Click">
+                                            <Border x:Name="InlineIdleThumb" Width="20" Height="20" CornerRadius="10" 
+                                                    Background="White" HorizontalAlignment="Left" Margin="2,0,0,0">
+                                                <Border.RenderTransform>
+                                                    <TranslateTransform x:Name="InlineIdleTranslate" X="0"/>
+                                                </Border.RenderTransform>
+                                            </Border>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                                
+                                <!-- Data Section -->
+                                <TextBlock Text="DATA" FontSize="10" FontWeight="Bold" 
+                                           Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,12"/>
+                                
+                                <Button Click="InlineExportData_Click" Style="{StaticResource SecondaryButton}" 
+                                        HorizontalAlignment="Stretch" Margin="0,0,0,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="12" 
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="Export Data" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                
+                                <Button Click="InlineImportData_Click" Style="{StaticResource SecondaryButton}" 
+                                        HorizontalAlignment="Stretch" Margin="0,0,0,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="12" 
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="Import Data" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                
+                                <Button Click="InlineClearData_Click" Style="{StaticResource DangerButton}" 
+                                        HorizontalAlignment="Stretch" Margin="0,16,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="12" 
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="Clear All Data" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </ScrollViewer>
                     </Grid>
                 </Border>
             </Grid>

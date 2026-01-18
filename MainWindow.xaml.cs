@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DeskWatch.Models;
@@ -300,8 +301,172 @@ namespace DeskWatch
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            var settingsWindow = new SettingsWindow { Owner = this };
-            settingsWindow.ShowDialog();
+            // Toggle inline settings panel
+            if (InlineSettingsPanel.Visibility == Visibility.Visible)
+            {
+                // Close settings - restore previous state
+                InlineSettingsPanel.Visibility = Visibility.Collapsed;
+                if (_selectedApp != null)
+                {
+                    DetailsPanel.Visibility = Visibility.Visible;
+                    NoSelectionPanel.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    DetailsPanel.Visibility = Visibility.Collapsed;
+                    NoSelectionPanel.Visibility = Visibility.Visible;
+                }
+            }
+            else
+            {
+                // Show settings - hide everything else
+                InlineSettingsPanel.Visibility = Visibility.Visible;
+                DetailsPanel.Visibility = Visibility.Collapsed;
+                NoSelectionPanel.Visibility = Visibility.Collapsed;
+                LoadInlineSettingsState();
+            }
+        }
+
+        private void LoadInlineSettingsState()
+        {
+            var accent = (Brush)FindResource("AccentGradient");
+            var off = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#404040"));
+
+            // Auto Start
+            var autoStart = SettingsManager.Settings.AutoStartEnabled;
+            InlineAutoStartToggle.Background = autoStart ? accent : off;
+            InlineAutoStartTranslate.X = autoStart ? 20 : 0;
+
+            // Minimize to Tray
+            var tray = SettingsManager.Settings.MinimizeToTray;
+            InlineTrayToggle.Background = tray ? accent : off;
+            InlineTrayTranslate.X = tray ? 20 : 0;
+
+            // Idle Detection
+            var idle = SettingsManager.Settings.IdleDetectionEnabled;
+            InlineIdleToggle.Background = idle ? accent : off;
+            InlineIdleTranslate.X = idle ? 20 : 0;
+        }
+
+        private void InlineAutoStartToggle_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var newState = !SettingsManager.Settings.AutoStartEnabled;
+            SettingsManager.SetAutoStart(newState);
+            AnimateToggle(InlineAutoStartToggle, InlineAutoStartTranslate, newState);
+        }
+
+        private void InlineTrayToggle_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var newState = !SettingsManager.Settings.MinimizeToTray;
+            SettingsManager.Settings.MinimizeToTray = newState;
+            SettingsManager.Save();
+            AnimateToggle(InlineTrayToggle, InlineTrayTranslate, newState);
+        }
+
+        private void InlineIdleToggle_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var newState = !SettingsManager.Settings.IdleDetectionEnabled;
+            SettingsManager.Settings.IdleDetectionEnabled = newState;
+            SettingsManager.Save();
+            AnimateToggle(InlineIdleToggle, InlineIdleTranslate, newState);
+        }
+
+        private void AnimateToggle(Border toggle, TranslateTransform transform, bool isOn)
+        {
+            var accent = (Brush)FindResource("AccentGradient");
+            var off = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#404040"));
+            toggle.Background = isOn ? accent : off;
+
+            var animation = new DoubleAnimation
+            {
+                To = isOn ? 20 : 0,
+                Duration = TimeSpan.FromMilliseconds(150),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            transform.BeginAnimation(TranslateTransform.XProperty, animation);
+        }
+
+        private void InlineExportData_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Export DeskWatch Data",
+                Filter = "JSON files (*.json)|*.json",
+                DefaultExt = ".json",
+                FileName = $"DeskWatch_Export_{DateTime.Now:yyyy-MM-dd}"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    var data = DataManager.Load();
+                    var json = System.Text.Json.JsonSerializer.Serialize(data, 
+                        new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                    System.IO.File.WriteAllText(dialog.FileName, json);
+                    MessageBox.Show($"Data exported successfully!", "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to export: {ex.Message}", "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void InlineImportData_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Import DeskWatch Data",
+                Filter = "JSON files (*.json)|*.json"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                var result = MessageBox.Show("This will replace all current data. Continue?", "Import Data",
+                    MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        var json = System.IO.File.ReadAllText(dialog.FileName);
+                        var data = System.Text.Json.JsonSerializer.Deserialize<SavedData>(json);
+                        if (data?.TrackedApps != null)
+                        {
+                            var existingData = DataManager.Load();
+                            existingData.TrackedApps = data.TrackedApps;
+                            existingData.LastSaved = DateTime.UtcNow;
+                            var newJson = System.Text.Json.JsonSerializer.Serialize(existingData);
+                            System.IO.File.WriteAllText(System.IO.Path.Combine(SettingsManager.GetAppDataFolder(), "usage_data.json"), newJson);
+                            MessageBox.Show("Data imported! Please restart DeskWatch.", "Import Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to import: {ex.Message}", "Import Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+
+        private void InlineClearData_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("Are you sure you want to clear ALL data? This cannot be undone.",
+                "Clear All Data", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                DataManager.Clear();
+                AppUsages.Clear();
+                _usageMap.Clear();
+                _selectedApp = null;
+                DetailsPanel.Visibility = Visibility.Hidden;
+                InlineSettingsPanel.Visibility = Visibility.Collapsed;
+                NoSelectionPanel.Visibility = Visibility.Visible;
+                UpdateEmptyState();
+                MessageBox.Show("All data has been cleared.", "Data Cleared", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private void RemoveApp_Click(object sender, RoutedEventArgs e)
@@ -554,6 +719,8 @@ namespace DeskWatch
                 app.IsSelected = true;
                 _selectedApp = app;
 
+                // Hide settings panel if open, show details
+                InlineSettingsPanel.Visibility = Visibility.Collapsed;
                 DetailsPanel.Visibility = Visibility.Visible;
                 NoSelectionPanel.Visibility = Visibility.Collapsed;
 
