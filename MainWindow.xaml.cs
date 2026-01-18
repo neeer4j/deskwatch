@@ -589,13 +589,42 @@ namespace DeskWatch
             _filteredView?.Refresh();
         }
 
-        private void SortComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void SortByTime_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (SortComboBox.SelectedItem is ComboBoxItem item && item.Tag is string sortTag)
-            {
-                _sortMode = sortTag;
-                ApplySort();
-            }
+            _sortMode = "time_desc";
+            ApplySort();
+            UpdateSortButtonVisuals();
+        }
+
+        private void SortByName_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            _sortMode = "name_asc";
+            ApplySort();
+            UpdateSortButtonVisuals();
+        }
+
+        private void SortBySessions_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            _sortMode = "sessions_desc";
+            ApplySort();
+            UpdateSortButtonVisuals();
+        }
+
+        private void UpdateSortButtonVisuals()
+        {
+            var accent = (Brush)FindResource("AccentGradient");
+            var transparent = Brushes.Transparent;
+            var white = Brushes.White;
+            var muted = (Brush)FindResource("TextMutedBrush");
+
+            SortByTimeBtn.Background = _sortMode == "time_desc" ? accent : transparent;
+            SortByNameBtn.Background = _sortMode == "name_asc" ? accent : transparent;
+            SortBySessionsBtn.Background = _sortMode == "sessions_desc" ? accent : transparent;
+
+            // Update icon colors
+            if (SortByTimeBtn.Child is TextBlock t1) t1.Foreground = _sortMode == "time_desc" ? white : muted;
+            if (SortByNameBtn.Child is TextBlock t2) t2.Foreground = _sortMode == "name_asc" ? white : muted;
+            if (SortBySessionsBtn.Child is TextBlock t3) t3.Foreground = _sortMode == "sessions_desc" ? white : muted;
         }
 
         private void ApplySort()
