@@ -7,7 +7,14 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <SystemDrawingEnableWindowsCompatibility>true</SystemDrawingEnableWindowsCompatibility>
+    <ApplicationIcon>assets\deskwatch.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="assets\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
