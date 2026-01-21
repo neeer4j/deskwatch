@@ -44,8 +44,24 @@ namespace DeskWatch
         private string _searchText = "";
         private string _sortMode = "time_desc";
         private ICollectionView? _filteredView;
+        
+        // Cached brushes to avoid repeated allocations
+        private static readonly SolidColorBrush IdleBrush = new(Color.FromRgb(0xF5, 0x9E, 0x0B));
+        private static readonly SolidColorBrush PausedBrush = new(Color.FromRgb(0x71, 0x71, 0x7A));
+        
+        // Optimization: Track running apps less frequently
+        private int _processCheckCounter = 0;
+        private const int ProcessCheckInterval = 5; // Check every 5 seconds instead of every second
+        private HashSet<string>? _cachedRunningProcessNames;
 
         public ObservableCollection<AppUsage> AppUsages { get; } = new();
+        
+        static MainWindow()
+        {
+            // Freeze brushes for better performance
+            IdleBrush.Freeze();
+            PausedBrush.Freeze();
+        }
 
         public MainWindow()
         {
@@ -63,8 +79,8 @@ namespace DeskWatch
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _timer.Tick += Timer_Tick;
 
-            // Auto-save every 30 seconds
-            _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            // Auto-save every 60 seconds (reduced from 30s for better performance)
+            _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
             _saveTimer.Tick += (s, e) => SaveData();
             _saveTimer.Start();
 
@@ -163,6 +179,8 @@ namespace DeskWatch
         {
             _isExiting = true;
             SaveData();
+            // Also save today's data to history on exit
+            DataManager.UpdateTodayInHistory(AppUsages);
             _notifyIcon?.Dispose();
             Application.Current.Shutdown();
         }
@@ -170,6 +188,24 @@ namespace DeskWatch
         private void LoadSavedData()
         {
             var savedData = DataManager.Load();
+            var today = DateTime.Today;
+            
+            // Check if we need to roll over to a new day
+            var needsDayRollover = savedData.CurrentTrackingDate.Date != today;
+            
+            if (needsDayRollover && savedData.TrackedApps.Count > 0)
+            {
+                // Archive previous day's data before loading
+                var tempApps = new List<AppUsage>();
+                foreach (var appData in savedData.TrackedApps)
+                {
+                    var tempApp = new AppUsage(appData.Key, appData.DisplayName);
+                    tempApp.SetTodayTime(TimeSpan.FromSeconds(appData.TodaySeconds));
+                    tempApps.Add(tempApp);
+                }
+                DataManager.ArchiveDayToHistory(savedData.CurrentTrackingDate.Date, tempApps);
+            }
+            
             foreach (var appData in savedData.TrackedApps)
             {
                 var app = new AppUsage(appData.Key, appData.DisplayName)
@@ -178,8 +214,16 @@ namespace DeskWatch
                     FocusCount = appData.FocusCount
                 };
 
-                // Restore time
-                app.Add(TimeSpan.FromSeconds(appData.TotalSeconds));
+                // Restore total time
+                app.AddToTotal(TimeSpan.FromSeconds(appData.TotalSeconds));
+                
+                // Restore today's time (or reset if new day)
+                if (!needsDayRollover)
+                {
+                    app.SetTodayTime(TimeSpan.FromSeconds(appData.TodaySeconds));
+                    app.TodayFocusCount = appData.TodayFocusCount;
+                }
+                // If new day, TodayTime stays at zero (default)
 
                 // Try to load icon
                 if (!string.IsNullOrEmpty(appData.ExePath) && File.Exists(appData.ExePath))
@@ -196,16 +240,52 @@ namespace DeskWatch
             }
         }
 
+        private DateTime _lastSaveDate = DateTime.Today;
+        private int _historyUpdateCounter = 0;
+
         private void SaveData()
         {
             DataManager.Save(AppUsages);
+            
+            // Update history every 10 saves (~10 minutes) to reduce disk writes
+            _historyUpdateCounter++;
+            if (_historyUpdateCounter >= 10)
+            {
+                DataManager.UpdateTodayInHistory(AppUsages);
+                _historyUpdateCounter = 0;
+            }
+        }
+        
+        private void CheckDayRollover()
+        {
+            var today = DateTime.Today;
+            if (_lastSaveDate.Date != today)
+            {
+                // Day has changed - archive previous day and reset today's counters
+                DataManager.ArchiveDayToHistory(_lastSaveDate, AppUsages);
+                
+                foreach (var app in AppUsages)
+                {
+                    app.OnDayRollover();
+                }
+                
+                _lastSaveDate = today;
+                SaveData();
+            }
         }
 
         private bool IsAppRunning(string processName)
         {
             try
             {
-                return Process.GetProcessesByName(processName).Length > 0;
+                var processes = Process.GetProcessesByName(processName);
+                var isRunning = processes.Length > 0;
+                // Dispose all returned processes
+                foreach (var proc in processes)
+                {
+                    proc.Dispose();
+                }
+                return isRunning;
             }
             catch
             {
@@ -264,6 +344,41 @@ namespace DeskWatch
         }
         #endregion
 
+        #region Navigation
+        private void DashboardButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowDashboardView();
+        }
+
+        private void ScreenTimeButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowScreenTimeView();
+        }
+
+        private void ShowDashboardView()
+        {
+            DashboardView.Visibility = Visibility.Visible;
+            ScreenTimeView.Visibility = Visibility.Collapsed;
+            
+            // Update sidebar button states
+            DashboardButton.Style = (Style)FindResource("SidebarButtonAccent");
+            ScreenTimeButton.Style = (Style)FindResource("SidebarButton");
+        }
+
+        private void ShowScreenTimeView()
+        {
+            DashboardView.Visibility = Visibility.Collapsed;
+            ScreenTimeView.Visibility = Visibility.Visible;
+            
+            // Update sidebar button states
+            DashboardButton.Style = (Style)FindResource("SidebarButton");
+            ScreenTimeButton.Style = (Style)FindResource("SidebarButtonAccent");
+            
+            // Refresh screen time data
+            ScreenTimeView.RefreshData(AppUsages);
+        }
+        #endregion
+
         private void UpdateStatusIndicator(bool isTracking)
         {
             if (isTracking)
@@ -273,7 +388,7 @@ namespace DeskWatch
             }
             else
             {
-                StatusIndicator.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#71717A"));
+                StatusIndicator.Fill = PausedBrush;
                 StatusText.Text = "Paused";
             }
         }
@@ -452,12 +567,13 @@ namespace DeskWatch
 
         private void InlineClearData_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show("Are you sure you want to clear ALL data? This cannot be undone.",
+            var result = MessageBox.Show("Are you sure you want to clear ALL data including history? This cannot be undone.",
                 "Clear All Data", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (result == MessageBoxResult.Yes)
             {
                 DataManager.Clear();
+                DataManager.ClearHistory();
                 AppUsages.Clear();
                 _usageMap.Clear();
                 _selectedApp = null;
@@ -465,6 +581,7 @@ namespace DeskWatch
                 InlineSettingsPanel.Visibility = Visibility.Collapsed;
                 NoSelectionPanel.Visibility = Visibility.Visible;
                 UpdateEmptyState();
+                UpdateTodayTime();
                 MessageBox.Show("All data has been cleared.", "Data Cleared", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
@@ -539,6 +656,9 @@ namespace DeskWatch
         {
             var now = DateTime.UtcNow;
             
+            // Check for day rollover at midnight
+            CheckDayRollover();
+            
             // Check for idle state if enabled
             if (SettingsManager.Settings.IdleDetectionEnabled)
             {
@@ -551,7 +671,7 @@ namespace DeskWatch
                     _isIdle = true;
                     _notifyIcon!.Text = "DeskWatch - Idle (Paused)";
                     StatusText.Text = "Idle - Paused";
-                    StatusIndicator.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F59E0B")); // Amber
+                    StatusIndicator.Fill = IdleBrush;
                 }
                 else if (!nowIdle && _isIdle)
                 {
@@ -587,17 +707,45 @@ namespace DeskWatch
             }
 
             // Check which tracked apps are currently running to detect launches
+            // Optimization: Only check every N seconds to reduce CPU usage
             var currentlyRunning = new HashSet<string>();
-            try
+            _processCheckCounter++;
+            
+            if (_processCheckCounter >= ProcessCheckInterval)
             {
-                var runningProcessNames = Process.GetProcesses()
-                    .Where(p => p.MainWindowHandle != IntPtr.Zero)
-                    .Select(p => p.ProcessName)
-                    .ToHashSet();
-
+                _processCheckCounter = 0;
+                try
+                {
+                    // Get all processes and properly dispose them
+                    var processes = Process.GetProcesses();
+                    var runningNames = new HashSet<string>();
+                    
+                    foreach (var proc in processes)
+                    {
+                        try
+                        {
+                            if (proc.MainWindowHandle != IntPtr.Zero)
+                            {
+                                runningNames.Add(proc.ProcessName);
+                            }
+                        }
+                        finally
+                        {
+                            proc.Dispose(); // Important: Dispose each process
+                        }
+                    }
+                    
+                    _cachedRunningProcessNames = runningNames;
+                }
+                catch { }
+            }
+            
+            // Use cached process names
+            if (_cachedRunningProcessNames != null)
+            {
                 foreach (var app in AppUsages)
                 {
-                    if (runningProcessNames.Contains(app.Key))
+                    if (_cachedRunningProcessNames.Contains(app.Key))
                     {
                         currentlyRunning.Add(app.Key);
 
@@ -608,7 +756,6 @@ namespace DeskWatch
                     }
                 }
             }
-            catch { }
 
             _runningAppsLastTick.Clear();
             foreach (var key in currentlyRunning)
@@ -623,6 +770,7 @@ namespace DeskWatch
             if (_selectedApp != null && DetailsPanel.Visibility == Visibility.Visible)
             {
                 DetailsTime.Text = _selectedApp.FormattedTotal;
+                DetailsTodayTime.Text = _selectedApp.FormattedTodayTime;
                 if (FindName("DetailsCount") is TextBlock countBlock)
                 {
                     countBlock.Text = _selectedApp.FocusCount.ToString();
@@ -705,6 +853,7 @@ namespace DeskWatch
             _timer?.Stop();
             _saveTimer?.Stop();
             SaveData();
+            DataManager.UpdateTodayInHistory(AppUsages);
             _notifyIcon?.Dispose();
             base.OnClosed(e);
         }
@@ -727,6 +876,7 @@ namespace DeskWatch
                 DetailsIcon.Source = app.Icon;
                 DetailsName.Text = app.DisplayName;
                 DetailsTime.Text = app.FormattedTotal;
+                DetailsTodayTime.Text = app.FormattedTodayTime;
                 
                 if (FindName("DetailsCount") is TextBlock countBlock)
                 {
@@ -818,7 +968,7 @@ namespace DeskWatch
             var totalToday = TimeSpan.Zero;
             foreach (var app in AppUsages)
             {
-                totalToday += app.Total;
+                totalToday += app.TodayTime;
             }
             TodayTimeText.Text = string.Format("{0:00}:{1:00}:{2:00}", 
                 (int)totalToday.TotalHours, totalToday.Minutes, totalToday.Seconds);

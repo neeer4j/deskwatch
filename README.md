@@ -11,7 +11,9 @@ A sleek Windows app that tracks how much time you spend in your apps. No cloud, 
 ## ✨ What's Cool About It
 
 - 🎯 **Track what matters** — Add only the apps you care about
-- 🔍 **Search & sort** — Find apps quickly, sort by time/name/sessions
+- � **Screen Time Dashboard** — See daily usage with beautiful bar charts
+- 📅 **14-Day History** — View your screen time trends over the past two weeks
+- �🔍 **Search & sort** — Find apps quickly, sort by time/name/sessions
 - 📊 **Today's summary** — See your total tracked time at a glance
 - 💾 **Auto-save** — Your data persists between sessions
 - 🔔 **System tray** — Runs quietly in the background

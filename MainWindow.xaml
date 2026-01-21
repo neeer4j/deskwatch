@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DeskWatch"
+        xmlns:controls="clr-namespace:DeskWatch.Controls"
         mc:Ignorable="d"
         Title="DeskWatch" Height="700" Width="1200" MinHeight="550" MinWidth="900"
         Background="{StaticResource BackgroundDarkBrush}" Foreground="{StaticResource TextPrimaryBrush}" 
@@ -74,6 +75,18 @@
                         </Grid.RowDefinitions>
                         
                         <StackPanel Margin="0,24,0,0">
+                            <!-- Section: Views -->
+                            <TextBlock Text="VIEWS" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" 
+                                       Margin="26,0,0,12"/>
+                            
+                            <Button x:Name="DashboardButton" Click="DashboardButton_Click" Content="Dashboard" Tag="&#xE80F;" 
+                                    Style="{StaticResource SidebarButtonAccent}"/>
+                            <Button x:Name="ScreenTimeButton" Click="ScreenTimeButton_Click" Content="Screen Time" Tag="&#xE916;" 
+                                    Style="{StaticResource SidebarButton}"/>
+                            
+                            <!-- Divider -->
+                            <Border Height="1" Background="{StaticResource BorderBrush}" Margin="24,20"/>
+                            
                             <!-- Section: Controls -->
                             <TextBlock Text="CONTROLS" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" 
                                        Margin="26,0,0,12"/>
@@ -138,23 +151,30 @@
                 <!--                        APP GRID AREA                             -->
                 <!-- ═══════════════════════════════════════════════════════════════ -->
                 
-                <Grid Grid.Column="1" Background="{StaticResource BackgroundMediumBrush}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                <!-- Dashboard View (Column 1 + Column 2) -->
+                <Grid x:Name="DashboardView" Grid.Column="1" Grid.ColumnSpan="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="320"/>
+                    </Grid.ColumnDefinitions>
                     
-                    <!-- Header with Search & Sort -->
-                    <Border Padding="32,24,32,16">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                    <Grid Grid.Column="0" Background="{StaticResource BackgroundMediumBrush}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                    
+                        <!-- Header with Search & Sort -->
+                        <Border Padding="32,24,32,16">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
                             
-                            <!-- Title Row -->
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Tracked Applications" FontSize="26" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <!-- Title Row -->
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Tracked Applications" FontSize="26" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                                 <Border Background="{StaticResource AccentGradient}" CornerRadius="12" Padding="10,4" Margin="16,0,0,0" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding AppUsages.Count, FallbackValue=0}" FontSize="12" FontWeight="Bold" Foreground="White"/>
                                 </Border>
@@ -320,13 +340,13 @@
                         <TextBlock Text="Click 'Add Application' to start tracking" FontSize="13" 
                                    Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                     </StackPanel>
-                </Grid>
+                    </Grid>
 
                 <!-- ═══════════════════════════════════════════════════════════════ -->
                 <!--                       DETAILS PANEL                              -->
                 <!-- ═══════════════════════════════════════════════════════════════ -->
                 
-                <Border Grid.Column="2" Background="{StaticResource SidebarGradient}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0">
+                <Border Grid.Column="1" Background="{StaticResource SidebarGradient}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0">
                     <Grid>
                         <!-- Details View -->
                         <StackPanel Margin="28" x:Name="DetailsPanel" Visibility="Hidden">
@@ -340,7 +360,7 @@
                             <TextBlock Text="Usage Statistics" FontSize="12" Foreground="{StaticResource TextMutedBrush}" 
                                        TextAlignment="Center" Margin="0,0,0,32"/>
                             
-                            <!-- Stat: Total Time -->
+                            <!-- Stat: Today's Time -->
                             <Border Background="#10FFFFFF" CornerRadius="14" Padding="20" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -348,10 +368,29 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <Border Background="{StaticResource AccentGradient}" CornerRadius="10" Padding="10" Margin="0,0,16,0">
-                                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"/>
+                                        <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"/>
                                     </Border>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="TOTAL TIME" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock Text="TODAY" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock x:Name="DetailsTodayTime" Text="00:00:00" FontSize="22" FontWeight="SemiBold" 
+                                                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Stat: Total Time -->
+                            <Border Background="#10FFFFFF" CornerRadius="14" Padding="20" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Background="#2A2A3A" CornerRadius="10" Padding="10" Margin="0,0,16,0">
+                                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="18" 
+                                                   Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="ALL TIME" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
                                         <TextBlock x:Name="DetailsTime" Text="00:00:00" FontSize="22" FontWeight="SemiBold" 
                                                    Foreground="{StaticResource TextPrimaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
@@ -506,6 +545,14 @@
                         </ScrollViewer>
                     </Grid>
                 </Border>
+                </Grid>
+                
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!--                     SCREEN TIME VIEW                             -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                
+                <controls:ScreenTimeControl x:Name="ScreenTimeView" Grid.Column="1" Grid.ColumnSpan="2" Visibility="Collapsed"/>
+                
             </Grid>
         </Grid>
     </Border>
