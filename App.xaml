@@ -76,6 +76,9 @@
                 <GradientStop Color="#2A2A2A" Offset="1"/>
             </LinearGradientBrush>
             
+            <!-- Simple Card Background -->
+            <SolidColorBrush x:Key="CardBrush" Color="#2A2A2A"/>
+            
             <!-- Glass Effect (Semi-transparent) -->
             <SolidColorBrush x:Key="GlassBrush" Color="#18FFFFFF"/>
             <SolidColorBrush x:Key="GlassBorderBrush" Color="#22FFFFFF"/>

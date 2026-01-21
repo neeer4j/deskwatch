@@ -155,7 +155,7 @@
                 <Grid x:Name="DashboardView" Grid.Column="1" Grid.ColumnSpan="2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="320"/>
+                        <ColumnDefinition Width="340"/>
                     </Grid.ColumnDefinitions>
                     
                     <Grid Grid.Column="0" Background="{StaticResource BackgroundMediumBrush}">
@@ -165,252 +165,224 @@
                         </Grid.RowDefinitions>
                     
                         <!-- Header with Search & Sort -->
-                        <Border Padding="32,24,32,16">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                            
+                        <Border Padding="40,32,40,20">
+                            <StackPanel>
                                 <!-- Title Row -->
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Tracked Applications" FontSize="26" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <Border Background="{StaticResource AccentGradient}" CornerRadius="12" Padding="10,4" Margin="16,0,0,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding AppUsages.Count, FallbackValue=0}" FontSize="12" FontWeight="Bold" Foreground="White"/>
-                                </Border>
-                            </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                                    <TextBlock Text="Tracked Applications" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                    <Border Background="{StaticResource AccentPrimaryBrush}" CornerRadius="14" Padding="12,6" Margin="16,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding AppUsages.Count, FallbackValue=0}" FontSize="13" FontWeight="Bold" Foreground="White"/>
+                                    </Border>
+                                </StackPanel>
                             
-                            <!-- Search & Sort Row -->
-                            <Grid Grid.Row="1" Margin="0,16,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" MaxWidth="320"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                                <!-- Search & Sort Row -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" MaxWidth="360"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
                                 
-                                <!-- Search Box -->
-                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" 
-                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="12,10">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
-                                                   Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                        <TextBox x:Name="SearchBox" Grid.Column="1" Background="Transparent" BorderThickness="0"
-                                                 Foreground="{StaticResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center"
-                                                 TextChanged="SearchBox_TextChanged" CaretBrush="{StaticResource AccentPrimaryBrush}"/>
-                                        <TextBlock x:Name="SearchPlaceholder" Grid.Column="1" Text="Search applications..." 
-                                                   FontSize="13" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"
-                                                   IsHitTestVisible="False" Visibility="Visible"/>
-                                    </Grid>
-                                </Border>
-                                
-                                <!-- Sort Buttons -->
-                                <Border Grid.Column="1" Background="{StaticResource SurfaceBrush}" 
-                                        CornerRadius="10" Padding="4" Margin="12,0,0,0">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Border x:Name="SortByTimeBtn" Background="{StaticResource AccentGradient}" 
-                                                CornerRadius="8" Padding="12,8" Cursor="Hand"
-                                                MouseLeftButtonUp="SortByTime_Click" ToolTip="Sort by Time">
-                                            <TextBlock Text="&#xE916;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
-                                                       Foreground="White" VerticalAlignment="Center"/>
-                                        </Border>
-                                        <Border x:Name="SortByNameBtn" Background="Transparent" 
-                                                CornerRadius="8" Padding="12,8" Cursor="Hand"
-                                                MouseLeftButtonUp="SortByName_Click" ToolTip="Sort by Name">
-                                            <TextBlock Text="&#xE8CB;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
-                                                       Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                        </Border>
-                                        <Border x:Name="SortBySessionsBtn" Background="Transparent" 
-                                                CornerRadius="8" Padding="12,8" Cursor="Hand"
-                                                MouseLeftButtonUp="SortBySessions_Click" ToolTip="Sort by Sessions">
-                                            <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
-                                                       Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                        </Border>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </Grid>
-                    </Border>
-                    
-                    <!-- App Cards Grid -->
-                    <ScrollViewer Grid.Row="1" Style="{StaticResource ModernScrollViewer}" Padding="24,0">
-                        <ItemsControl ItemsSource="{Binding AppUsages}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border x:Name="card" Background="{StaticResource CardGradient}" 
-                                            CornerRadius="16" Margin="8" Width="130" Height="140" Cursor="Hand"
-                                            BorderThickness="1" BorderBrush="{StaticResource BorderBrush}"
-                                            Effect="{StaticResource CardShadow}"
-                                            MouseLeftButtonUp="AppCard_Click" Tag="{Binding}" RenderTransformOrigin="0.5,0.5">
-                                        <Border.RenderTransform>
-                                            <TransformGroup>
-                                                <ScaleTransform x:Name="cardScale" ScaleX="1" ScaleY="1"/>
-                                                <TranslateTransform x:Name="cardTranslate" Y="0"/>
-                                            </TransformGroup>
-                                        </Border.RenderTransform>
+                                    <!-- Search Box -->
+                                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" 
+                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="14,12">
                                         <Grid>
-                                            <!-- Selection Glow Border -->
-                                            <Border x:Name="glowBorder" CornerRadius="16" Opacity="0"
-                                                    BorderThickness="2" BorderBrush="{StaticResource AccentGradient}"/>
-                                            
-                                            <!-- Content -->
-                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                <!-- App Icon with shadow -->
-                                                <Border Background="#18FFFFFF" CornerRadius="14" Padding="10" Margin="0,0,0,10"
-                                                        HorizontalAlignment="Center">
-                                                    <Image Source="{Binding Icon}" Width="36" Height="36" 
-                                                           RenderOptions.BitmapScalingMode="HighQuality"/>
-                                                </Border>
-                                                
-                                                <!-- App Name -->
-                                                <TextBlock Text="{Binding DisplayName}" FontSize="11" FontWeight="Medium"
-                                                           Foreground="{StaticResource TextSecondaryBrush}" 
-                                                           TextAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="110"/>
-                                                
-                                                <!-- Time Display -->
-                                                <TextBlock Text="{Binding FormattedTotal}" FontSize="15" FontWeight="Bold" 
-                                                           Foreground="{StaticResource AccentPrimaryBrush}" 
-                                                           TextAlignment="Center" Margin="0,6,0,0"/>
-                                            </StackPanel>
-                                            
-                                            <!-- Selection Indicator -->
-                                            <Border Width="10" Height="10" CornerRadius="5" 
-                                                    Background="{StaticResource AccentGradient}" 
-                                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10"
-                                                    Visibility="{Binding IsSelected, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}">
-                                                <Border.Effect>
-                                                    <DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#6366F1" Opacity="0.6"/>
-                                                </Border.Effect>
-                                            </Border>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="15" 
+                                                       Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                            <TextBox x:Name="SearchBox" Grid.Column="1" Background="Transparent" BorderThickness="0"
+                                                     Foreground="{StaticResource TextPrimaryBrush}" FontSize="14" VerticalAlignment="Center"
+                                                     TextChanged="SearchBox_TextChanged" CaretBrush="{StaticResource AccentPrimaryBrush}"/>
+                                            <TextBlock x:Name="SearchPlaceholder" Grid.Column="1" Text="Search applications..." 
+                                                       FontSize="14" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"
+                                                       IsHitTestVisible="False" Visibility="Visible"/>
                                         </Grid>
                                     </Border>
-                                    <DataTemplate.Triggers>
-                                        <Trigger SourceName="card" Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="card" Property="Effect" Value="{StaticResource CardHoverShadow}"/>
-                                            <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource BorderHoverBrush}"/>
-                                            <Trigger.EnterActions>
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="cardScale" Storyboard.TargetProperty="ScaleX" To="1.03" Duration="0:0:0.2"/>
-                                                        <DoubleAnimation Storyboard.TargetName="cardScale" Storyboard.TargetProperty="ScaleY" To="1.03" Duration="0:0:0.2"/>
-                                                        <DoubleAnimation Storyboard.TargetName="cardTranslate" Storyboard.TargetProperty="Y" To="-4" Duration="0:0:0.2"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </Trigger.EnterActions>
-                                            <Trigger.ExitActions>
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="cardScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.2"/>
-                                                        <DoubleAnimation Storyboard.TargetName="cardScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.2"/>
-                                                        <DoubleAnimation Storyboard.TargetName="cardTranslate" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.2"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </Trigger.ExitActions>
-                                        </Trigger>
-                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                            <Setter TargetName="card" Property="Background">
-                                                <Setter.Value>
-                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                        <GradientStop Color="#252538" Offset="0"/>
-                                                        <GradientStop Color="#1E1E30" Offset="1"/>
-                                                    </LinearGradientBrush>
-                                                </Setter.Value>
-                                            </Setter>
-                                            <Setter TargetName="glowBorder" Property="Opacity" Value="1"/>
-                                        </DataTrigger>
-                                    </DataTemplate.Triggers>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                                
+                                    <!-- Sort Buttons -->
+                                    <Border Grid.Column="1" Background="{StaticResource SurfaceBrush}" 
+                                            CornerRadius="12" Padding="4" Margin="16,0,0,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border x:Name="SortByTimeBtn" Background="{StaticResource AccentPrimaryBrush}" 
+                                                    CornerRadius="8" Padding="14,10" Cursor="Hand"
+                                                    MouseLeftButtonUp="SortByTime_Click" ToolTip="Sort by Time">
+                                                <TextBlock Text="&#xE916;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
+                                                           Foreground="White" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <Border x:Name="SortByNameBtn" Background="Transparent" 
+                                                    CornerRadius="8" Padding="14,10" Cursor="Hand"
+                                                    MouseLeftButtonUp="SortByName_Click" ToolTip="Sort by Name">
+                                                <TextBlock Text="&#xE8CB;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
+                                                           Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <Border x:Name="SortBySessionsBtn" Background="Transparent" 
+                                                    CornerRadius="8" Padding="14,10" Cursor="Hand"
+                                                    MouseLeftButtonUp="SortBySessions_Click" ToolTip="Sort by Sessions">
+                                                <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
+                                                           Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
                     
-                    <!-- Empty State -->
-                    <StackPanel x:Name="EmptyState" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
-                        <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="48" 
-                                   Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
-                        <TextBlock Text="No applications tracked yet" FontSize="18" FontWeight="SemiBold" 
-                                   Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Click 'Add Application' to start tracking" FontSize="13" 
-                                   Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
-                    </StackPanel>
+                        <!-- App Cards Grid -->
+                        <ScrollViewer Grid.Row="1" Style="{StaticResource ModernScrollViewer}" Padding="32,8,32,32">
+                            <ItemsControl ItemsSource="{Binding AppUsages}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="card" Background="{StaticResource CardBrush}" 
+                                                CornerRadius="16" Margin="8" Width="150" Height="160" Cursor="Hand"
+                                                BorderThickness="1" BorderBrush="{StaticResource BorderBrush}"
+                                                MouseLeftButtonUp="AppCard_Click" Tag="{Binding}">
+                                            <Grid>
+                                                <!-- Selection Border -->
+                                                <Border x:Name="glowBorder" CornerRadius="16" Opacity="0"
+                                                        BorderThickness="2" BorderBrush="{StaticResource AccentPrimaryBrush}"/>
+                                            
+                                                <!-- Content -->
+                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="12">
+                                                    <!-- App Icon -->
+                                                    <Border Background="#12FFFFFF" CornerRadius="14" Padding="12" Margin="0,0,0,12"
+                                                            HorizontalAlignment="Center">
+                                                        <Image Source="{Binding Icon}" Width="40" Height="40" 
+                                                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                    </Border>
+                                                
+                                                    <!-- App Name -->
+                                                    <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="Medium"
+                                                               Foreground="{StaticResource TextSecondaryBrush}" 
+                                                               TextAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="130"/>
+                                                
+                                                    <!-- Time Display -->
+                                                    <TextBlock Text="{Binding FormattedTotal}" FontSize="17" FontWeight="Bold" 
+                                                               Foreground="{StaticResource AccentPrimaryBrush}" 
+                                                               TextAlignment="Center" Margin="0,8,0,0"/>
+                                                </StackPanel>
+                                            
+                                                <!-- Selection Indicator -->
+                                                <Border Width="10" Height="10" CornerRadius="5" 
+                                                        Background="{StaticResource AccentPrimaryBrush}" 
+                                                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12"
+                                                        Visibility="{Binding IsSelected, Converter={StaticResource BoolToVis}, FallbackValue=Hidden}"/>
+                                            </Grid>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <Trigger SourceName="card" Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="card" Property="Background" Value="#3A3A3A"/>
+                                                <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource BorderHoverBrush}"/>
+                                            </Trigger>
+                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                <Setter TargetName="card" Property="Background" Value="#2A2A3A"/>
+                                                <Setter TargetName="glowBorder" Property="Opacity" Value="1"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    
+                        <!-- Empty State -->
+                        <StackPanel x:Name="EmptyState" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
+                            <Border Background="#08FFFFFF" CornerRadius="24" Padding="24" HorizontalAlignment="Center" Margin="0,0,0,20">
+                                <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" FontSize="48" 
+                                           Foreground="{StaticResource TextMutedBrush}"/>
+                            </Border>
+                            <TextBlock Text="No applications tracked yet" FontSize="18" FontWeight="SemiBold" 
+                                       Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Click 'Add Application' to start tracking" FontSize="13" 
+                                       Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        </StackPanel>
                     </Grid>
 
                 <!-- ═══════════════════════════════════════════════════════════════ -->
                 <!--                       DETAILS PANEL                              -->
                 <!-- ═══════════════════════════════════════════════════════════════ -->
                 
-                <Border Grid.Column="1" Background="{StaticResource SidebarGradient}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0">
+                <Border Grid.Column="1" Background="{StaticResource BackgroundDarkBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <Grid>
                         <!-- Details View -->
-                        <StackPanel Margin="28" x:Name="DetailsPanel" Visibility="Hidden">
-                            <!-- App Header -->
-                            <Border Background="#10FFFFFF" CornerRadius="18" Padding="16" HorizontalAlignment="Center" Margin="0,16,0,20">
-                                <Image x:Name="DetailsIcon" Width="72" Height="72" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <StackPanel Margin="32,40,32,48" x:Name="DetailsPanel" Visibility="Hidden">
+                            <!-- App Header Card -->
+                            <Border Background="{StaticResource CardBrush}" CornerRadius="20" Padding="28" 
+                                    BorderThickness="1" BorderBrush="{StaticResource BorderBrush}" Margin="0,0,0,24">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <Border Background="#0CFFFFFF" CornerRadius="20" Padding="20" HorizontalAlignment="Center" Margin="0,0,0,16">
+                                        <Image x:Name="DetailsIcon" Width="56" Height="56" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    </Border>
+                                    <TextBlock x:Name="DetailsName" Text="Application" FontSize="20" FontWeight="Bold" 
+                                               Foreground="{StaticResource TextPrimaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
+                                </StackPanel>
                             </Border>
-                            <TextBlock x:Name="DetailsName" Text="Application" FontSize="22" FontWeight="Bold" 
-                                       Foreground="{StaticResource TextPrimaryBrush}" TextAlignment="Center" TextWrapping="Wrap" 
-                                       Margin="0,0,0,8"/>
-                            <TextBlock Text="Usage Statistics" FontSize="12" Foreground="{StaticResource TextMutedBrush}" 
-                                       TextAlignment="Center" Margin="0,0,0,32"/>
+                            
+                            <!-- Stats Grid -->
+                            <TextBlock Text="USAGE STATISTICS" FontSize="11" FontWeight="SemiBold" 
+                                       Foreground="{StaticResource TextMutedBrush}" Margin="4,0,0,16"/>
                             
                             <!-- Stat: Today's Time -->
-                            <Border Background="#10FFFFFF" CornerRadius="14" Padding="20" Margin="0,0,0,12">
+                            <Border Background="{StaticResource CardBrush}" CornerRadius="16" Padding="20" Margin="0,0,0,10"
+                                    BorderThickness="1" BorderBrush="{StaticResource BorderBrush}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Border Background="{StaticResource AccentGradient}" CornerRadius="10" Padding="10" Margin="0,0,16,0">
-                                        <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"/>
+                                    <Border Background="{StaticResource AccentPrimaryBrush}" CornerRadius="12" Width="44" Height="44">
+                                        <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" FontSize="17" 
+                                                   Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="TODAY" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
-                                        <TextBlock x:Name="DetailsTodayTime" Text="00:00:00" FontSize="22" FontWeight="SemiBold" 
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0">
+                                        <TextBlock Text="TODAY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock x:Name="DetailsTodayTime" Text="00:00:00" FontSize="24" FontWeight="Bold" 
                                                    Foreground="{StaticResource TextPrimaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
                             
                             <!-- Stat: Total Time -->
-                            <Border Background="#10FFFFFF" CornerRadius="14" Padding="20" Margin="0,0,0,12">
+                            <Border Background="{StaticResource CardBrush}" CornerRadius="16" Padding="20" Margin="0,0,0,10"
+                                    BorderThickness="1" BorderBrush="{StaticResource BorderBrush}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Border Background="#2A2A3A" CornerRadius="10" Padding="10" Margin="0,0,16,0">
-                                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="18" 
-                                                   Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                    <Border Background="#2A2A3A" CornerRadius="12" Width="44" Height="44">
+                                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="17" 
+                                                   Foreground="{StaticResource AccentPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="ALL TIME" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
-                                        <TextBlock x:Name="DetailsTime" Text="00:00:00" FontSize="22" FontWeight="SemiBold" 
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0">
+                                        <TextBlock Text="ALL TIME" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock x:Name="DetailsTime" Text="00:00:00" FontSize="24" FontWeight="Bold" 
                                                    Foreground="{StaticResource TextPrimaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
                             
-                            <!-- Stat: Focus Count -->
-                            <Border Background="#10FFFFFF" CornerRadius="14" Padding="20" Margin="0,0,0,40">
+                            <!-- Stat: Sessions Count -->
+                            <Border Background="{StaticResource CardBrush}" CornerRadius="16" Padding="20" Margin="0,0,0,32"
+                                    BorderThickness="1" BorderBrush="{StaticResource BorderBrush}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Border Background="#2A2A3A" CornerRadius="10" Padding="10" Margin="0,0,16,0">
-                                        <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" FontSize="18" 
-                                                   Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                    <Border Background="#2A2A3A" CornerRadius="12" Width="44" Height="44">
+                                        <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" FontSize="17" 
+                                                   Foreground="{StaticResource AccentPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="SESSIONS" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
-                                        <TextBlock x:Name="DetailsCount" Text="0" FontSize="22" FontWeight="SemiBold" 
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0">
+                                        <TextBlock Text="SESSIONS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock x:Name="DetailsCount" Text="0" FontSize="24" FontWeight="Bold" 
                                                    Foreground="{StaticResource TextPrimaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Grid>
@@ -418,19 +390,19 @@
                             
                             <!-- Remove Button -->
                             <Button Click="RemoveApp_Click" Content="Remove Application" Style="{StaticResource DangerButton}" 
-                                    HorizontalAlignment="Stretch"/>
+                                    HorizontalAlignment="Stretch" Height="48"/>
                         </StackPanel>
 
                         <!-- Empty State -->
-                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" x:Name="NoSelectionPanel">
-                            <Border Background="#08FFFFFF" CornerRadius="20" Padding="20" HorizontalAlignment="Center" Margin="0,0,0,20">
-                                <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="40" 
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" x:Name="NoSelectionPanel" Margin="32">
+                            <Border Background="#06FFFFFF" CornerRadius="24" Padding="28" HorizontalAlignment="Center" Margin="0,0,0,24">
+                                <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="44" 
                                            Foreground="{StaticResource TextMutedBrush}"/>
                             </Border>
-                            <TextBlock x:Name="NoSelectionText" Text="Select an application" FontSize="17" FontWeight="SemiBold" 
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
-                            <TextBlock x:Name="NoSelectionSubText" Text="to view usage statistics" FontSize="13" 
-                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,0" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="NoSelectionText" Text="Select an application" FontSize="18" FontWeight="SemiBold" 
+                                       Foreground="{StaticResource TextSecondaryBrush}" TextAlignment="Center"/>
+                            <TextBlock x:Name="NoSelectionSubText" Text="to view usage statistics" FontSize="14" 
+                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0" HorizontalAlignment="Center"/>
                         </StackPanel>
                         
                         <!-- Inline Settings Panel -->
@@ -544,6 +516,7 @@
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>
+                    </ScrollViewer>
                 </Border>
                 </Grid>
                 

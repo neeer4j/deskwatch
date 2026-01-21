@@ -53,6 +53,10 @@ namespace DeskWatch
         private int _processCheckCounter = 0;
         private const int ProcessCheckInterval = 5; // Check every 5 seconds instead of every second
         private HashSet<string>? _cachedRunningProcessNames;
+        
+        // Global screen time tracking (independent of apps)
+        private TimeSpan _todayScreenTime = TimeSpan.Zero;
+        private DateTime _screenTimeDate = DateTime.Today;
 
         public ObservableCollection<AppUsage> AppUsages { get; } = new();
         
@@ -84,6 +88,9 @@ namespace DeskWatch
             _saveTimer.Tick += (s, e) => SaveData();
             _saveTimer.Start();
 
+            // Initialize running apps cache immediately
+            InitializeRunningAppsCache();
+            
             // Initialize running apps set
             foreach (var app in AppUsages)
             {
@@ -180,7 +187,7 @@ namespace DeskWatch
             _isExiting = true;
             SaveData();
             // Also save today's data to history on exit
-            DataManager.UpdateTodayInHistory(AppUsages);
+            DataManager.UpdateTodayInHistory(_todayScreenTime);
             _notifyIcon?.Dispose();
             Application.Current.Shutdown();
         }
@@ -190,21 +197,25 @@ namespace DeskWatch
             var savedData = DataManager.Load();
             var today = DateTime.Today;
             
+            // Load saved screen time
+            if (savedData.ScreenTimeDate.Date == today)
+            {
+                _todayScreenTime = TimeSpan.FromSeconds(savedData.TodayScreenTimeSeconds);
+                _screenTimeDate = today;
+            }
+            else
+            {
+                // Archive previous day's screen time
+                if (savedData.TodayScreenTimeSeconds > 0)
+                {
+                    DataManager.ArchiveDayToHistory(savedData.ScreenTimeDate, TimeSpan.FromSeconds(savedData.TodayScreenTimeSeconds));
+                }
+                _todayScreenTime = TimeSpan.Zero;
+                _screenTimeDate = today;
+            }
+            
             // Check if we need to roll over to a new day
             var needsDayRollover = savedData.CurrentTrackingDate.Date != today;
-            
-            if (needsDayRollover && savedData.TrackedApps.Count > 0)
-            {
-                // Archive previous day's data before loading
-                var tempApps = new List<AppUsage>();
-                foreach (var appData in savedData.TrackedApps)
-                {
-                    var tempApp = new AppUsage(appData.Key, appData.DisplayName);
-                    tempApp.SetTodayTime(TimeSpan.FromSeconds(appData.TodaySeconds));
-                    tempApps.Add(tempApp);
-                }
-                DataManager.ArchiveDayToHistory(savedData.CurrentTrackingDate.Date, tempApps);
-            }
             
             foreach (var appData in savedData.TrackedApps)
             {
@@ -245,13 +256,13 @@ namespace DeskWatch
 
         private void SaveData()
         {
-            DataManager.Save(AppUsages);
+            DataManager.Save(AppUsages, _todayScreenTime, _screenTimeDate);
             
             // Update history every 10 saves (~10 minutes) to reduce disk writes
             _historyUpdateCounter++;
             if (_historyUpdateCounter >= 10)
             {
-                DataManager.UpdateTodayInHistory(AppUsages);
+                DataManager.UpdateTodayInHistory(_todayScreenTime);
                 _historyUpdateCounter = 0;
             }
         }
@@ -262,16 +273,47 @@ namespace DeskWatch
             if (_lastSaveDate.Date != today)
             {
                 // Day has changed - archive previous day and reset today's counters
-                DataManager.ArchiveDayToHistory(_lastSaveDate, AppUsages);
+                DataManager.ArchiveDayToHistory(_lastSaveDate, _todayScreenTime);
                 
                 foreach (var app in AppUsages)
                 {
                     app.OnDayRollover();
                 }
                 
+                // Reset screen time for new day
+                _todayScreenTime = TimeSpan.Zero;
+                _screenTimeDate = today;
+                
                 _lastSaveDate = today;
                 SaveData();
             }
+        }
+
+        private void InitializeRunningAppsCache()
+        {
+            try
+            {
+                var processes = Process.GetProcesses();
+                var runningNames = new HashSet<string>();
+                
+                foreach (var proc in processes)
+                {
+                    try
+                    {
+                        if (proc.MainWindowHandle != IntPtr.Zero)
+                        {
+                            runningNames.Add(proc.ProcessName);
+                        }
+                    }
+                    finally
+                    {
+                        proc.Dispose();
+                    }
+                }
+                
+                _cachedRunningProcessNames = runningNames;
+            }
+            catch { }
         }
 
         private bool IsAppRunning(string processName)
@@ -374,7 +416,8 @@ namespace DeskWatch
             DashboardButton.Style = (Style)FindResource("SidebarButton");
             ScreenTimeButton.Style = (Style)FindResource("SidebarButtonAccent");
             
-            // Refresh screen time data
+            // Initialize with live screen time getter and refresh data
+            ScreenTimeView.Initialize(() => _todayScreenTime);
             ScreenTimeView.RefreshData(AppUsages);
         }
         #endregion
@@ -692,23 +735,22 @@ namespace DeskWatch
             }
             
             var currentKey = GetCurrentAppKey(out _, out _);
-
-            // Attribute elapsed time since last tick to the previously active app
-            if (_lastKey is not null)
+            var delta = now - _lastTickUtc;
+            
+            // Track global screen time (whenever screen is on and not idle)
+            if (delta > TimeSpan.Zero && delta < TimeSpan.FromSeconds(5))
             {
-                var delta = now - _lastTickUtc;
-                if (delta > TimeSpan.Zero)
+                // Check if day changed
+                if (_screenTimeDate.Date != DateTime.Today)
                 {
-                    if (_usageMap.TryGetValue(_lastKey, out var lastUsage))
-                    {
-                        lastUsage.Add(delta);
-                    }
+                    _todayScreenTime = TimeSpan.Zero;
+                    _screenTimeDate = DateTime.Today;
                 }
+                _todayScreenTime += delta;
             }
 
-            // Check which tracked apps are currently running to detect launches
-            // Optimization: Only check every N seconds to reduce CPU usage
-            var currentlyRunning = new HashSet<string>();
+            // Check which tracked apps are currently running
+            // Optimization: Only check process list every N seconds to reduce CPU usage
             _processCheckCounter++;
             
             if (_processCheckCounter >= ProcessCheckInterval)
@@ -740,8 +782,9 @@ namespace DeskWatch
                 catch { }
             }
             
-            // Use cached process names
-            if (_cachedRunningProcessNames != null)
+            // Track ALL running tracked apps every tick (using cached process list)
+            var currentlyRunning = new HashSet<string>();
+            if (_cachedRunningProcessNames != null && delta > TimeSpan.Zero)
             {
                 foreach (var app in AppUsages)
                 {
@@ -749,8 +792,15 @@ namespace DeskWatch
                     {
                         currentlyRunning.Add(app.Key);
 
-                        if (!_runningAppsLastTick.Contains(app.Key))
+                        // Track time for ALL running tracked apps (not just foreground)
+                        if (_runningAppsLastTick.Contains(app.Key))
                         {
+                            // App was running last tick too - add the elapsed time
+                            app.Add(delta);
+                        }
+                        else
+                        {
+                            // App just started - increment session count
                             app.IncrementFocusCount();
                         }
                     }
@@ -853,7 +903,7 @@ namespace DeskWatch
             _timer?.Stop();
             _saveTimer?.Stop();
             SaveData();
-            DataManager.UpdateTodayInHistory(AppUsages);
+            DataManager.UpdateTodayInHistory(_todayScreenTime);
             _notifyIcon?.Dispose();
             base.OnClosed(e);
         }
@@ -965,14 +1015,15 @@ namespace DeskWatch
 
         private void UpdateTodayTime()
         {
-            var totalToday = TimeSpan.Zero;
-            foreach (var app in AppUsages)
-            {
-                totalToday += app.TodayTime;
-            }
+            // Use global screen time (not app-based)
             TodayTimeText.Text = string.Format("{0:00}:{1:00}:{2:00}", 
-                (int)totalToday.TotalHours, totalToday.Minutes, totalToday.Seconds);
+                (int)_todayScreenTime.TotalHours, _todayScreenTime.Minutes, _todayScreenTime.Seconds);
         }
+        
+        /// <summary>
+        /// Gets the current global screen time for today
+        /// </summary>
+        public TimeSpan GetTodayScreenTime() => _todayScreenTime;
         #endregion
 
         #region Win32

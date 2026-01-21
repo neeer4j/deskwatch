@@ -1,87 +1,125 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
+using System.Windows.Threading;
 using DeskWatch.Models;
 
 namespace DeskWatch.Controls
 {
     public partial class ScreenTimeControl : UserControl
     {
-        // Pre-allocated color array (static readonly for efficiency)
-        private static readonly string[] ChartColors =
-        {
-            "#06B6D4", "#14B8A6", "#22C55E", "#84CC16", "#EAB308",
-            "#F59E0B", "#F97316", "#EF4444", "#EC4899", "#A855F7",
-            "#6366F1", "#3B82F6", "#0EA5E9", "#10B981"
-        };
-
-        private readonly ObservableCollection<DailyUsageViewModel> _chartData = new();
+        private readonly List<DailyUsageViewModel> _chartData = new();
         private DailyUsageViewModel? _selectedDay;
-        private readonly Dictionary<string, string> _appDisplayNames = new(32);
         
-        // Cache the last history to avoid reloading when selecting days
-        private List<DailyUsageEntry>? _cachedHistory;
+        // Live refresh timer
+        private DispatcherTimer? _refreshTimer;
+        
+        // Reference to get live screen time
+        private Func<TimeSpan>? _getScreenTime;
 
         public ScreenTimeControl()
         {
             InitializeComponent();
         }
 
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Start live refresh timer when control is visible
+            if (_refreshTimer == null)
+            {
+                _refreshTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1) // Refresh every second for live count
+                };
+                _refreshTimer.Tick += RefreshTimer_Tick;
+            }
+            _refreshTimer.Start();
+        }
+
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            // Stop timer when hidden to save resources
+            _refreshTimer?.Stop();
+        }
+
+        private void RefreshTimer_Tick(object? sender, EventArgs e)
+        {
+            // Update today's time from main window
+            if (_getScreenTime != null)
+            {
+                var screenTime = _getScreenTime();
+                TodayTimeText.Text = FormatTimeShort(screenTime);
+                
+                // Update today's bar in chart if present
+                var todayVm = _chartData.FirstOrDefault(d => d.IsToday);
+                if (todayVm != null)
+                {
+                    todayVm.TotalTime = screenTime;
+                    
+                    // Recalculate bar height
+                    var maxSeconds = _chartData.Max(d => d.TotalTime.TotalSeconds);
+                    if (maxSeconds < 1) maxSeconds = 1;
+                    todayVm.BarHeight = Math.Max(3, (screenTime.TotalSeconds / maxSeconds) * 120);
+                    
+                    // Update selected day if today is selected
+                    if (_selectedDay?.IsToday == true)
+                    {
+                        SelectedDayTime.Text = $" — {FormatTimeShort(screenTime)}";
+                    }
+                }
+            }
+        }
+
         /// <summary>
-        /// Refreshes all screen time data from history
+        /// Initialize with a function to get live screen time
+        /// </summary>
+        public void Initialize(Func<TimeSpan> getScreenTime)
+        {
+            _getScreenTime = getScreenTime;
+        }
+
+        /// <summary>
+        /// Full refresh of screen time data
         /// </summary>
         public void RefreshData(IEnumerable<AppUsage> trackedApps)
         {
             try
             {
-                // Cache app display names (reuse dictionary)
-                _appDisplayNames.Clear();
-                foreach (var app in trackedApps)
+                // Load 14 days of history
+                var history = DataManager.GetLast14Days();
+                
+                // Get current screen time from main window
+                var todayScreenTime = _getScreenTime?.Invoke() ?? TimeSpan.Zero;
+                
+                // Update today's entry with live data
+                var todayEntry = history.FirstOrDefault(d => d.Date.Date == DateTime.Today);
+                if (todayEntry != null)
                 {
-                    _appDisplayNames[app.Key] = app.DisplayName;
-                }
-
-                // Update today's data in history first
-                DataManager.UpdateTodayInHistory(trackedApps);
-
-                // Load 14 days of history and cache it
-                _cachedHistory = DataManager.GetLast14Days();
-                
-                // Calculate statistics
-                UpdateSummaryCards(_cachedHistory);
-                
-                // Build chart data
-                BuildChartData(_cachedHistory);
-                
-                // Update date range text
-                if (_cachedHistory.Count >= 2)
-                {
-                    var firstDate = _cachedHistory[0].Date;
-                    var lastDate = _cachedHistory[^1].Date;
-                    DateRangeText.Text = $"{firstDate:MMM d} - {lastDate:MMM d}";
+                    todayEntry.TotalSeconds = (long)todayScreenTime.TotalSeconds;
                 }
                 
-                // Select today by default if nothing selected
+                // Update summary cards
+                UpdateSummaryCards(history, todayScreenTime);
+                
+                // Build chart
+                BuildChartData(history);
+                
+                // Update date range
+                if (history.Count >= 2)
+                {
+                    DateRangeText.Text = $"{history[0].Date:MMM d} - {history[^1].Date:MMM d}";
+                }
+                
+                // Select today by default
                 if (_selectedDay == null)
                 {
                     var today = _chartData.FirstOrDefault(d => d.IsToday);
                     if (today != null)
                     {
                         SelectDay(today);
-                    }
-                }
-                else
-                {
-                    // Refresh the selected day's data
-                    var updated = _chartData.FirstOrDefault(d => d.Date.Date == _selectedDay.Date.Date);
-                    if (updated != null)
-                    {
-                        SelectDay(updated);
                     }
                 }
             }
@@ -91,78 +129,49 @@ namespace DeskWatch.Controls
             }
         }
 
-        private void UpdateSummaryCards(List<DailyUsageEntry> history)
+        private void UpdateSummaryCards(List<DailyUsageEntry> history, TimeSpan todayScreenTime)
         {
             // Today's time
-            var todayEntry = history.FirstOrDefault(d => d.Date.Date == DateTime.Today);
-            var todayTime = todayEntry?.TotalTime ?? TimeSpan.Zero;
-            TodayTimeText.Text = FormatTimeShort(todayTime);
+            TodayTimeText.Text = FormatTimeShort(todayScreenTime);
 
             // Total 14 days
             var totalSeconds = history.Sum(d => d.TotalSeconds);
-            var totalTime = TimeSpan.FromSeconds(totalSeconds);
-            TotalTimeText.Text = FormatTimeShort(totalTime);
+            TotalTimeText.Text = FormatTimeShort(TimeSpan.FromSeconds(totalSeconds));
 
             // Weekly average (last 7 days)
-            var last7Days = history.Where(d => d.Date >= DateTime.Today.AddDays(-6)).ToList();
-            if (last7Days.Count > 0)
+            var last7 = history.Where(d => d.Date >= DateTime.Today.AddDays(-6)).ToList();
+            if (last7.Count > 0)
             {
-                var avgSeconds = last7Days.Average(d => d.TotalSeconds);
-                var avgTime = TimeSpan.FromSeconds(avgSeconds);
-                WeeklyAvgText.Text = FormatTimeShort(avgTime);
+                var avgSeconds = last7.Average(d => d.TotalSeconds);
+                WeeklyAvgText.Text = FormatTimeShort(TimeSpan.FromSeconds(avgSeconds));
             }
             else
             {
-                WeeklyAvgText.Text = "0h 0m";
+                WeeklyAvgText.Text = "0s";
             }
-
-            // Update Y-axis labels based on max time
-            var maxSeconds = history.Count > 0 ? history.Max(d => d.TotalSeconds) : 0;
-            UpdateYAxisLabels(maxSeconds);
-        }
-
-        private void UpdateYAxisLabels(long maxSeconds)
-        {
-            // Round up to nice intervals
-            var maxHours = Math.Max(1, Math.Ceiling(maxSeconds / 3600.0));
-            
-            // Choose nice round numbers
-            double[] niceIntervals = { 1, 2, 4, 6, 8, 10, 12, 16, 20, 24 };
-            var targetMax = niceIntervals.FirstOrDefault(n => n >= maxHours);
-            if (targetMax == 0) targetMax = 24;
-
-            var interval = targetMax / 4.0;
-
-            YLabel4.Text = $"{targetMax:F0}h";
-            YLabel3.Text = $"{targetMax * 0.75:F0}h";
-            YLabel2.Text = $"{targetMax * 0.5:F0}h";
-            YLabel1.Text = $"{targetMax * 0.25:F0}h";
         }
 
         private void BuildChartData(List<DailyUsageEntry> history)
         {
             _chartData.Clear();
             
-            // Find max for scaling
             var maxSeconds = history.Count > 0 ? history.Max(d => d.TotalSeconds) : 1;
             if (maxSeconds == 0) maxSeconds = 1;
             
-            // Max bar height in pixels
-            const double maxBarHeight = 180;
-            const double maxPercentWidth = 200; // For progress bar in table
+            const double maxBarHeight = 120;
+            const double maxProgressWidth = 180;
 
             foreach (var entry in history)
             {
-                var vm = new DailyUsageViewModel
+                _chartData.Add(new DailyUsageViewModel
                 {
                     Date = entry.Date,
                     TotalTime = entry.TotalTime,
-                    BarHeight = Math.Max(4, (entry.TotalSeconds / (double)maxSeconds) * maxBarHeight),
-                    BarHeightPercentage = Math.Max(0, (entry.TotalSeconds / (double)maxSeconds) * maxPercentWidth),
+                    BarHeight = Math.Max(3, (entry.TotalSeconds / (double)maxSeconds) * maxBarHeight),
+                    BarHeightPercentage = Math.Max(0, (entry.TotalSeconds / (double)maxSeconds) * maxProgressWidth),
                     IsToday = entry.Date.Date == DateTime.Today,
                     IsSelected = _selectedDay?.Date.Date == entry.Date.Date
-                };
-                _chartData.Add(vm);
+                });
             }
 
             BarChart.ItemsSource = _chartData;
@@ -180,42 +189,13 @@ namespace DeskWatch.Controls
             _selectedDay = day;
             day.IsSelected = true;
 
-            // Update UI
             SelectedDayTitle.Text = day.FullDateLabel;
             SelectedDayTime.Text = $" — {day.FormattedTotalShort}";
             SelectedDayPanel.Visibility = Visibility.Visible;
 
-            // Use cached history instead of reloading from disk
-            var dayEntry = _cachedHistory?.FirstOrDefault(d => d.Date.Date == day.Date.Date);
-            
-            if (dayEntry != null && dayEntry.AppSeconds.Count > 0)
-            {
-                var breakdown = new List<AppUsageBreakdown>(dayEntry.AppSeconds.Count);
-                var colorIndex = 0;
-                var totalSeconds = dayEntry.TotalSeconds;
+            // No app breakdown for global screen time
+            AppBreakdownList.ItemsSource = null;
 
-                foreach (var kvp in dayEntry.AppSeconds.OrderByDescending(k => k.Value))
-                {
-                    var displayName = _appDisplayNames.TryGetValue(kvp.Key, out var name) ? name : kvp.Key;
-                    breakdown.Add(new AppUsageBreakdown
-                    {
-                        AppKey = kvp.Key,
-                        AppName = displayName,
-                        Time = TimeSpan.FromSeconds(kvp.Value),
-                        Percentage = totalSeconds > 0 ? (kvp.Value * 100.0 / totalSeconds) : 0,
-                        Color = ChartColors[colorIndex % ChartColors.Length]
-                    });
-                    colorIndex++;
-                }
-
-                AppBreakdownList.ItemsSource = breakdown;
-            }
-            else
-            {
-                AppBreakdownList.ItemsSource = null;
-            }
-
-            // Refresh chart to update selection highlight
             BarChart.Items.Refresh();
         }
 
@@ -240,7 +220,7 @@ namespace DeskWatch.Controls
             if (time.TotalHours >= 1)
                 return $"{(int)time.TotalHours}h {time.Minutes}m";
             else if (time.TotalMinutes >= 1)
-                return $"{(int)time.TotalMinutes}m";
+                return $"{(int)time.TotalMinutes}m {time.Seconds}s";
             else
                 return $"{time.Seconds}s";
         }

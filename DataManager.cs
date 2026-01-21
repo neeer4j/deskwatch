@@ -24,6 +24,10 @@ namespace DeskWatch
         public List<AppUsageData> TrackedApps { get; set; } = new();
         public DateTime LastSaved { get; set; } = DateTime.UtcNow;
         public DateTime CurrentTrackingDate { get; set; } = DateTime.Today;
+        
+        // Global screen time (independent of apps)
+        public long TodayScreenTimeSeconds { get; set; }
+        public DateTime ScreenTimeDate { get; set; } = DateTime.Today;
     }
 
     public static class DataManager
@@ -60,7 +64,7 @@ namespace DeskWatch
             return new SavedData();
         }
 
-        public static void Save(IEnumerable<AppUsage> apps)
+        public static void Save(IEnumerable<AppUsage> apps, TimeSpan screenTime = default, DateTime? screenTimeDate = null)
         {
             try
             {
@@ -86,7 +90,9 @@ namespace DeskWatch
                 {
                     LastSaved = DateTime.UtcNow,
                     CurrentTrackingDate = DateTime.Today,
-                    TrackedApps = new List<AppUsageData>(_appDataBuffer)
+                    TrackedApps = new List<AppUsageData>(_appDataBuffer),
+                    TodayScreenTimeSeconds = (long)screenTime.TotalSeconds,
+                    ScreenTimeDate = screenTimeDate ?? DateTime.Today
                 };
 
                 // Ensure directory exists
@@ -158,7 +164,7 @@ namespace DeskWatch
             catch { }
         }
 
-        public static void ArchiveDayToHistory(DateTime date, IEnumerable<AppUsage> apps)
+        public static void ArchiveDayToHistory(DateTime date, TimeSpan screenTime)
         {
             try
             {
@@ -171,28 +177,17 @@ namespace DeskWatch
                     history.DailyUsage.Remove(existingEntry);
                 }
 
-                // Create new entry with pre-sized dictionary
-                var appsList = apps.ToList();
-                var entry = new DailyUsageEntry
-                {
-                    Date = date.Date,
-                    TotalSeconds = 0,
-                    AppSeconds = new Dictionary<string, long>(appsList.Count)
-                };
-
-                foreach (var app in appsList)
-                {
-                    var seconds = (long)app.TodayTime.TotalSeconds;
-                    if (seconds > 0)
-                    {
-                        entry.AppSeconds[app.Key] = seconds;
-                        entry.TotalSeconds += seconds;
-                    }
-                }
-
+                var seconds = (long)screenTime.TotalSeconds;
+                
                 // Only save if there's data
-                if (entry.TotalSeconds > 0)
+                if (seconds > 0)
                 {
+                    var entry = new DailyUsageEntry
+                    {
+                        Date = date.Date,
+                        TotalSeconds = seconds,
+                        AppSeconds = new Dictionary<string, long>()
+                    };
                     history.DailyUsage.Add(entry);
                     SaveHistory(history);
                 }
@@ -200,7 +195,7 @@ namespace DeskWatch
             catch { }
         }
 
-        public static void UpdateTodayInHistory(IEnumerable<AppUsage> apps)
+        public static void UpdateTodayInHistory(TimeSpan screenTime)
         {
             try
             {
@@ -219,19 +214,8 @@ namespace DeskWatch
                     history.DailyUsage.Add(todayEntry);
                 }
 
-                // Update with current data
-                todayEntry.TotalSeconds = 0;
-                todayEntry.AppSeconds.Clear();
-                
-                foreach (var app in apps)
-                {
-                    var seconds = (long)app.TodayTime.TotalSeconds;
-                    if (seconds > 0)
-                    {
-                        todayEntry.AppSeconds[app.Key] = seconds;
-                        todayEntry.TotalSeconds += seconds;
-                    }
-                }
+                // Update with global screen time
+                todayEntry.TotalSeconds = (long)screenTime.TotalSeconds;
 
                 SaveHistory(history);
             }
