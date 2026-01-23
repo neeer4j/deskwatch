@@ -73,7 +73,20 @@ namespace DeskWatch
                     return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
                 }
             }
-            catch { }
+            catch
+            {
+                // If loading fails (e.g. corrupted JSON), backup the file so we don't lose user data
+                try
+                {
+                    if (File.Exists(SettingsFile))
+                    {
+                        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                        var backupPath = Path.Combine(AppDataFolder, $"settings.corrupted.{timestamp}.json");
+                        File.Copy(SettingsFile, backupPath, true);
+                    }
+                }
+                catch { /* Best effort backup */ }
+            }
             
             return new AppSettings();
         }

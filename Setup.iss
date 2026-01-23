@@ -5,9 +5,6 @@
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Neeraj Venu"
 #define MyAppExeName "DeskWatch.exe"
-#define MyAppAssocName MyAppName + " File"
-#define MyAppAssocExt ".json"
-#define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -18,10 +15,10 @@ AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
-ChangesAssociations=yes
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
-;PrivilegesRequired=lowest
+PrivilegesRequired=admin
+ArchitecturesInstallIn64BitMode=x64
 OutputBaseFilename=DeskWatch_Setup_v1.0
 SetupIconFile=assets\deskwatch.ico
 Compression=lzma
