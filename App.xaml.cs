@@ -16,10 +16,13 @@ namespace DeskWatch
         {
             base.OnStartup(e);
 
-            // Initialize settings first to know if this is first run
+            // Check if this is first run BEFORE Initialize() sets it to false
+            bool isFirstRun = SettingsManager.Settings.FirstRun;
+
+            // Initialize settings (this sets FirstRun to false)
             SettingsManager.Initialize();
 
-            if (SettingsManager.Settings.FirstRun)
+            if (isFirstRun)
             {
                 // Show welcome window for first-time users
                 var welcome = new WelcomeWindow();

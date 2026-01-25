@@ -242,7 +242,8 @@
                                         <Border x:Name="card" Background="{StaticResource CardBrush}" 
                                                 CornerRadius="16" Margin="8" Width="150" Height="160" Cursor="Hand"
                                                 BorderThickness="1" BorderBrush="{StaticResource BorderBrush}"
-                                                MouseLeftButtonUp="AppCard_Click" Tag="{Binding}">
+                                                MouseLeftButtonUp="AppCard_Click" MouseLeftButtonDown="AppCard_DoubleClick" Tag="{Binding}"
+                                                ToolTip="Double-click to launch app">
                                             <Grid>
                                                 <!-- Selection Border -->
                                                 <Border x:Name="glowBorder" CornerRadius="16" Opacity="0"

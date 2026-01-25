@@ -935,6 +935,45 @@ namespace DeskWatch
             }
         }
 
+        private void AppCard_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            // Check for double-click
+            if (e.ClickCount == 2 && sender is Border border && border.Tag is AppUsage app)
+            {
+                LaunchApp(app);
+                e.Handled = true;
+            }
+        }
+
+        private void LaunchApp(AppUsage app)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(app.ExePath) && File.Exists(app.ExePath))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = app.ExePath,
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    // Try to launch by process name if exe path is not available
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = app.Key,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not launch {app.DisplayName}:\n{ex.Message}", 
+                    "Launch Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
         #region Search, Sort, and Today's Time
         private bool AppFilter(object item)
         {
