@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System;
+using System.IO;
+using System.Windows;
 
 namespace DeskWatch
 {
@@ -38,6 +40,15 @@ namespace DeskWatch
 
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
+            // Log the crash to a file for debugging
+            try
+            {
+                var logPath = Path.Combine(SettingsManager.GetAppDataFolder(), "crash.log");
+                var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {e.Exception.GetType().Name}: {e.Exception.Message}\n{e.Exception.StackTrace}\n\n";
+                File.AppendAllText(logPath, logEntry);
+            }
+            catch { /* Best effort logging */ }
+
             MessageBox.Show($"Unhandled Exception:\n{e.Exception.Message}\n\n{e.Exception.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true;
             Shutdown();

@@ -59,7 +59,24 @@ namespace DeskWatch
                     return JsonSerializer.Deserialize<SavedData>(json) ?? new SavedData();
                 }
             }
-            catch { }
+            catch
+            {
+                // If loading fails (e.g., corrupted JSON), backup the file so we don't lose user data
+                try
+                {
+                    if (File.Exists(DataFile))
+                    {
+                        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                        var dir = Path.GetDirectoryName(DataFile);
+                        if (!string.IsNullOrEmpty(dir))
+                        {
+                            var backupPath = Path.Combine(dir, $"usage_data.corrupted.{timestamp}.json");
+                            File.Copy(DataFile, backupPath, true);
+                        }
+                    }
+                }
+                catch { /* Best effort backup */ }
+            }
             
             return new SavedData();
         }
