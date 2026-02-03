@@ -28,7 +28,16 @@ namespace DeskWatch
 
             if (GetLastInputInfo(ref lastInput))
             {
-                var idleMs = (uint)Environment.TickCount - lastInput.dwTime;
+                // Use TickCount64 to avoid overflow after ~49.7 days of uptime
+                // Mask to 32 bits since dwTime is a 32-bit value from Win32 API
+                var currentTick = Environment.TickCount64 & 0xFFFFFFFF;
+                var lastInputTick = (long)lastInput.dwTime;
+                
+                // Handle wrap-around case
+                var idleMs = currentTick >= lastInputTick 
+                    ? currentTick - lastInputTick 
+                    : (0xFFFFFFFF - lastInputTick) + currentTick + 1;
+                    
                 return TimeSpan.FromMilliseconds(idleMs);
             }
 
