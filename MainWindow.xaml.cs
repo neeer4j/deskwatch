@@ -444,7 +444,7 @@ namespace DeskWatch
                 var p = dialog.SelectedProcess;
                 if (!_usageMap.ContainsKey(p.ProcessName))
                 {
-                    var app = new AppUsage(p.ProcessName, p.MainWindowTitle)
+                    var app = new AppUsage(p.ProcessName, p.DisplayName)
                     {
                         ExePath = p.ExePath,
                         Icon = p.Icon
@@ -856,6 +856,22 @@ namespace DeskWatch
                     exePath = null;
                 }
 
+                // Prioritize ProductName from file version info (e.g., "Spotify" instead of song name)
+                try
+                {
+                    if (exePath != null)
+                    {
+                        var productName = proc.MainModule?.FileVersionInfo.ProductName;
+                        if (!string.IsNullOrWhiteSpace(productName))
+                        {
+                            displayName = productName;
+                            return key;
+                        }
+                    }
+                }
+                catch { }
+
+                // Fall back to window title if product name is not available
                 var title = GetWindowTitle(hwnd);
                 if (!string.IsNullOrWhiteSpace(title))
                 {
@@ -863,15 +879,7 @@ namespace DeskWatch
                 }
                 else
                 {
-                    try
-                    {
-                        if (exePath != null)
-                        {
-                            displayName = proc.MainModule?.FileVersionInfo.ProductName;
-                        }
-                    }
-                    catch { }
-                    displayName ??= key;
+                    displayName = key;
                 }
                 return key;
             }

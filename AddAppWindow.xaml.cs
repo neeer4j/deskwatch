@@ -110,10 +110,26 @@ namespace DeskWatch
                         }
                     }
                     
+                    // Get display name from ProductName first, fall back to MainWindowTitle
+                    string displayName = p.MainWindowTitle;
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(exePath))
+                        {
+                            var productName = p.MainModule?.FileVersionInfo.ProductName;
+                            if (!string.IsNullOrWhiteSpace(productName))
+                            {
+                                displayName = productName;
+                            }
+                        }
+                    }
+                    catch { }
+
                     var item = new ProcessItem
                     {
                         ProcessName = p.ProcessName,
-                        MainWindowTitle = p.MainWindowTitle,
+                        MainWindowTitle = displayName,
+                        DisplayName = displayName,
                         ExePath = exePath
                     };
                     
@@ -127,7 +143,7 @@ namespace DeskWatch
                 catch { }
             }
 
-            ProcessList.ItemsSource = apps.OrderBy(a => a.MainWindowTitle).ToList();
+            ProcessList.ItemsSource = apps.OrderBy(a => a.DisplayName).ToList();
         }
 
         private void BrowseFile_Click(object sender, RoutedEventArgs e)
@@ -164,6 +180,7 @@ namespace DeskWatch
                 {
                     ProcessName = fileName,
                     MainWindowTitle = displayName,
+                    DisplayName = displayName,
                     ExePath = exePath,
                     Icon = GetAppIcon(exePath)
                 };
@@ -215,6 +232,7 @@ namespace DeskWatch
     {
         public string ProcessName { get; set; } = "";
         public string MainWindowTitle { get; set; } = "";
+        public string DisplayName { get; set; } = "";
         public string? ExePath { get; set; }
         public ImageSource? Icon { get; set; }
     }
