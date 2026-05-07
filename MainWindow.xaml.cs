@@ -32,6 +32,7 @@ namespace DeskWatch
         private string? _lastKey;
 
         private AppUsage? _selectedApp;
+        private bool _cleanupPerformed = false;
         
         // System Tray
         private Forms.NotifyIcon? _notifyIcon;
@@ -185,11 +186,29 @@ namespace DeskWatch
         private void ExitApplication()
         {
             _isExiting = true;
-            SaveData();
-            // Also save today's data to history on exit
-            DataManager.UpdateTodayInHistory(_todayScreenTime);
-            _notifyIcon?.Dispose();
+            CleanupAndPersist();
             Application.Current.Shutdown();
+        }
+
+        private void CleanupAndPersist()
+        {
+            if (_cleanupPerformed)
+            {
+                return;
+            }
+
+            _cleanupPerformed = true;
+            _timer.Stop();
+            _saveTimer.Stop();
+            SaveData();
+            DataManager.UpdateTodayInHistory(_todayScreenTime);
+
+            if (_notifyIcon != null)
+            {
+                _notifyIcon.Visible = false;
+                _notifyIcon.Dispose();
+                _notifyIcon = null;
+            }
         }
 
         private void LoadSavedData()
@@ -908,11 +927,7 @@ namespace DeskWatch
 
         protected override void OnClosed(EventArgs e)
         {
-            _timer?.Stop();
-            _saveTimer?.Stop();
-            SaveData();
-            DataManager.UpdateTodayInHistory(_todayScreenTime);
-            _notifyIcon?.Dispose();
+            CleanupAndPersist();
             base.OnClosed(e);
         }
 

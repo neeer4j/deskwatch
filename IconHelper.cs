@@ -68,11 +68,11 @@ namespace DeskWatch
                         using var ms = new MemoryStream();
                         bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
                         ms.Position = 0;
-                        
+
                         var img = new BitmapImage();
                         img.BeginInit();
-                        img.StreamSource = new MemoryStream(ms.ToArray()); // Create new stream for BitmapImage
                         img.CacheOption = BitmapCacheOption.OnLoad;
+                        img.StreamSource = ms;
                         img.EndInit();
                         img.Freeze(); // Make it thread-safe
                         return img;
